@@ -113,6 +113,11 @@ h3,
 .is-bc .hdr-logo {
   height: 2.4rem;
   border-right: 0;
+  padding-right: 0;
+}
+/* projector: the wordmark is the title; the steps + view buttons need the room */
+.is-bc .hdr-title {
+  display: none;
 }
 .rail-btn {
   width: 2.75rem;
