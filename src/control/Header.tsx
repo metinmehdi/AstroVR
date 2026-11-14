@@ -1,4 +1,4 @@
-/** Console header: mission identity, 5-step phase timeline, EVA clock, link status and view controls. */
+/** Console header: big title + breadcrumb, 5-step phase timeline, EVA clock pill, link status, cadet chip (view controls in broadcast). */
 import { t } from '../shared/i18n';
 import { evaClock } from '../shared/protocol';
 import type { Lang, SimState } from '../shared/types';
@@ -11,6 +11,7 @@ export function Header({
   step,
   connected,
   ready,
+  cadetName,
   mirrorLive,
   broadcast,
   overlay,
@@ -23,6 +24,7 @@ export function Header({
   step: number;
   connected: boolean;
   ready: boolean;
+  cadetName: string;
   mirrorLive: boolean;
   broadcast: boolean;
   overlay: boolean;
@@ -32,21 +34,18 @@ export function Header({
 }) {
   const eva = s.evaStartedAt === null ? 0 : s.t - s.evaStartedAt;
   const active = s.phase !== 'lobby';
+  const name = cadetName.trim() || tr(lang, 'mc.phone');
   return (
     <header className={`hdr ${overlay ? 'hdr-bc' : ''}`}>
-      <div className="brand">
-        <svg className="brand-mark" viewBox="0 0 40 40" aria-hidden="true">
-          <circle cx="20" cy="20" r="11" fill="#d9dde3" />
-          <circle cx="16" cy="17" r="2.6" fill="#aab1bb" />
-          <circle cx="23.5" cy="24" r="1.8" fill="#aab1bb" />
-          <ellipse cx="20" cy="20" rx="18" ry="7" fill="none" stroke="#FF7A1A" strokeWidth="2.2" transform="rotate(-24 20 20)" />
-        </svg>
-        <div className="brand-text">
-          <div className="brand-name">
-            AstroVR <span className="brand-sep">/</span> <span className="brand-sub">{tr(lang, 'mc.console')}</span>
-          </div>
-          <div className="brand-mission">{tr(lang, 'mc.mission')}</div>
-        </div>
+      <div className="hdr-title">
+        <h1>{tr(lang, 'mc.console')}</h1>
+        <nav className="crumbs" aria-label="Breadcrumb">
+          <span>AstroVR</span>
+          <span className="crumb-sep">/</span>
+          <span>{tr(lang, 'mc.site').split(' · ')[0]}</span>
+          <span className="crumb-sep">/</span>
+          <b>{t(lang, `phase.${s.phase}` as 'phase.lobby')}</b>
+        </nav>
       </div>
 
       <ol className="steps" aria-label="Mission phases">
@@ -54,49 +53,55 @@ export function Header({
           const state = !active || n > step ? 'todo' : n < step ? 'done' : 'cur';
           return (
             <li key={n} className={`step ${state}`}>
-              {state === 'cur' ? (
-                <span className="step-cur">{t(lang, `phase.${s.phase}` as 'phase.lobby')}</span>
-              ) : (
-                <>
-                  <span className="step-num">{state === 'done' ? <Icon name="check" size={13} strokeWidth={3} /> : n}</span>
-                  <span className="step-lbl">{tr(lang, `step.${n}` as SKey)}</span>
-                </>
-              )}
+              <span className="step-num">{state === 'done' ? <Icon name="check" size={12} strokeWidth={3} /> : n}</span>
+              <span className="step-lbl">{tr(lang, `step.${n}` as SKey)}</span>
             </li>
           );
         })}
       </ol>
 
-      <div className="clock" title={tr(lang, 'mc.evaClock')}>
-        <span className="clock-lbl">EVA</span>
-        <span className="clock-val">{evaClock(eva)}</span>
-      </div>
-
-      <div className="status">
-        <span className={`stat ${connected ? 'ok' : 'bad'}`} title={connected ? tr(lang, 'mc.link') : tr(lang, 'mc.noLink')}>
+      <div className="hdr-pills">
+        <span className="pill-box clock" title={tr(lang, 'mc.evaClock')}>
+          <span className="clock-lbl">EVA</span>
+          <span className="clock-val">{evaClock(eva)}</span>
+        </span>
+        <span className={`pill-box stat ${connected ? 'ok' : 'bad'}`}>
           <i className="dot" /> {connected ? tr(lang, 'mc.link') : tr(lang, 'mc.noLink')}
         </span>
-        <span className={`stat ${ready ? 'ok' : 'idle'}`}>
-          <Icon name="user" size={14} /> {ready ? tr(lang, 'mc.phoneReady') : tr(lang, 'mc.phoneWaiting')}
-        </span>
         {mirrorLive && (
-          <span className="stat live">
+          <span className="pill-box stat live">
             <i className="dot" /> VIDEO
           </span>
         )}
       </div>
 
-      <div className="hdr-actions">
-        <button className="btn ghost" onClick={onData}>
-          <Icon name="satellite" size={18} /> {tr(lang, 'mc.nasaData')}
-        </button>
-        <button className="btn ghost" onClick={onLang} aria-label="Language">
-          <Icon name="globe" size={18} /> {lang === 'en' ? 'AZ' : 'EN'}
-        </button>
-        <button className={`btn ghost ${broadcast ? 'active' : ''}`} onClick={onBroadcast} title={tr(lang, 'mc.broadcastHint')}>
-          <Icon name="screen" size={18} /> {broadcast ? tr(lang, 'mc.operator') : tr(lang, 'mc.broadcast')}
-          <kbd>B</kbd>
-        </button>
+      {broadcast && (
+        <div className="hdr-actions">
+          <button className="btn ghost" onClick={onData}>
+            <Icon name="satellite" size={18} /> {tr(lang, 'mc.nasaData')}
+          </button>
+          <button className="btn ghost" onClick={onLang} aria-label="Language">
+            <Icon name="globe" size={18} /> {lang === 'en' ? 'AZ' : 'EN'}
+          </button>
+          <button className="btn ghost active" onClick={onBroadcast} title={tr(lang, 'mc.broadcastHint')}>
+            <Icon name="screen" size={18} /> {tr(lang, 'mc.operator')}
+            <kbd>B</kbd>
+          </button>
+        </div>
+      )}
+
+      <div className={`cadet ${ready ? 'ready' : ''}`} title={ready ? tr(lang, 'mc.phoneReady') : tr(lang, 'mc.phoneWaiting')}>
+        <span className="live-tag">
+          <Icon name="star" size={11} strokeWidth={2.4} /> NASA DATA
+        </span>
+        <span className="avatar" aria-hidden="true">
+          <Icon name="user" size={18} />
+          <i className="avatar-dot" />
+        </span>
+        <span className="cadet-text">
+          <b>{name}</b>
+          <small>{ready ? tr(lang, 'mc.phoneReady') : tr(lang, 'mc.phoneWaiting')}</small>
+        </span>
       </div>
     </header>
   );

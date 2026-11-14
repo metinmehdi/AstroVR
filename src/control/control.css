@@ -3,22 +3,27 @@
    Dark NASA-style console, sun-orange accent, large projector-friendly type, 8-pt spacing (rem based so the
    whole console scales with the screen: 1280 px laptop → 1920 px projector).
    ===================================================================================================== */
+/* Dark glass "space dashboard" (ui-ux-pro-max: Glassmorphism + dark dashboard palette, Space Grotesk / Inter).
+   Blue = primary action, lime = healthy / positive, amber = caution, rose = danger. */
 :root {
-  --bg: #05080d;
-  --bg-2: #08101a;
-  --panel: #0b131e;
-  --panel-2: #101b2a;
-  --panel-3: #16243a;
-  --line: #1a2738;
-  --line-2: #2a3c54;
-  --text: #eaf1fb;
-  --muted: #8a9bb2;
-  --dim: #56677d;
-  --accent: #ff7a1a;
-  --accent-2: #ffa25a;
-  --accent-soft: rgba(255, 122, 26, 0.14);
-  --ok: #34d399;
-  --ok-soft: rgba(52, 211, 153, 0.14);
+  --bg: #03060c;
+  --bg-2: #070c17;
+  --panel: rgba(10, 16, 30, 0.78);
+  --panel-2: rgba(19, 28, 48, 0.78);
+  --panel-3: rgba(30, 43, 70, 0.9);
+  --line: rgba(148, 163, 184, 0.13);
+  --line-2: rgba(148, 163, 184, 0.24);
+  --text: #f1f5fb;
+  --muted: #8d9cb5;
+  --dim: #5d6c85;
+  --accent: #2f6bff;
+  --accent-2: #7aa5ff;
+  --accent-soft: rgba(47, 107, 255, 0.16);
+  --ok: #a3e635;
+  --ok-soft: rgba(163, 230, 53, 0.14);
+  --glass-blur: 16px;
+  --head-font: 'Space Grotesk', 'Segoe UI Variable Display', 'Segoe UI', system-ui, sans-serif;
+  --rail: 4.4rem;
   --warn: #fbbf24;
   --warn-soft: rgba(251, 191, 36, 0.14);
   --danger: #f43f5e;
@@ -32,11 +37,11 @@
   --s5: 1.25rem;
   --s6: 1.5rem;
   --s8: 2rem;
-  --r: 14px;
-  --r-sm: 10px;
-  --hdr: 4rem;
-  --font: 'Segoe UI Variable Text', 'Segoe UI', Inter, system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif;
-  --shadow: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 10px 30px rgba(0, 0, 0, 0.35);
+  --r: 18px;
+  --r-sm: 12px;
+  --hdr: 5rem;
+  --font: Inter, 'Segoe UI Variable Text', 'Segoe UI', system-ui, -apple-system, Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --shadow: 0 1px 0 rgba(255, 255, 255, 0.05) inset, 0 18px 40px rgba(0, 0, 0, 0.45);
   color-scheme: dark;
 }
 html {
@@ -47,7 +52,8 @@ html {
 }
 body {
   margin: 0;
-  background: var(--bg);
+  background: radial-gradient(60% 55% at 50% 45%, rgba(37, 99, 235, 0.1), transparent 70%), var(--bg);
+  background-attachment: fixed;
   color: var(--text);
   font: 1rem/1.4 var(--font);
   font-variant-numeric: tabular-nums;
@@ -147,15 +153,15 @@ button {
   cursor: not-allowed;
 }
 .btn.primary {
-  background: linear-gradient(180deg, #ff8a33, var(--accent));
+  background: linear-gradient(180deg, #3b82f6, var(--accent));
   border-color: transparent;
-  color: #1a0b00;
+  color: #ffffff;
   font-weight: 800;
   letter-spacing: 0.02em;
-  box-shadow: 0 6px 22px rgba(255, 122, 26, 0.28);
+  box-shadow: 0 6px 22px rgba(47, 107, 255, 0.28);
 }
 .btn.primary:hover:not(:disabled) {
-  background: linear-gradient(180deg, #ff9a4d, #ff861f);
+  background: linear-gradient(180deg, #60a5fa, #2f6bff);
   border-color: transparent;
 }
 .btn.ghost {
@@ -177,7 +183,7 @@ button {
 }
 .btn.accent-outline {
   background: var(--accent-soft);
-  border-color: rgba(255, 122, 26, 0.6);
+  border-color: rgba(47, 107, 255, 0.6);
   color: var(--accent-2);
 }
 .btn.icon-only {
@@ -210,10 +216,10 @@ button {
 @keyframes pulse {
   0%,
   100% {
-    box-shadow: 0 0 0 0 rgba(255, 122, 26, 0.55);
+    box-shadow: 0 0 0 0 rgba(47, 107, 255, 0.55);
   }
   50% {
-    box-shadow: 0 0 0 8px rgba(255, 122, 26, 0);
+    box-shadow: 0 0 0 8px rgba(47, 107, 255, 0);
   }
 }
 kbd {
@@ -314,7 +320,7 @@ input:focus {
   padding: 0.15rem 0.5rem;
   border-radius: 6px;
   background: var(--accent);
-  color: #1a0b00;
+  color: #ffffff;
 }
 .bar {
   height: 0.5rem;
@@ -457,15 +463,15 @@ input:focus {
 .step.done .step-num {
   background: var(--accent);
   border-color: var(--accent);
-  color: #1a0b00;
+  color: #ffffff;
 }
 .step-cur {
   padding: 0.35rem 0.8rem;
   border-radius: 999px;
   background: var(--accent);
-  color: #1a0b00;
+  color: #ffffff;
   font-weight: 800;
-  box-shadow: 0 0 0 4px var(--accent-soft), 0 0 22px rgba(255, 122, 26, 0.35);
+  box-shadow: 0 0 0 4px var(--accent-soft), 0 0 22px rgba(47, 107, 255, 0.35);
 }
 .clock {
   display: flex;
@@ -505,7 +511,7 @@ input:focus {
 }
 .stat.ok {
   color: var(--ok);
-  border-color: rgba(52, 211, 153, 0.35);
+  border-color: rgba(163, 230, 53, 0.35);
 }
 .stat.bad {
   color: var(--danger);
@@ -735,12 +741,12 @@ input:focus {
   display: flex;
   gap: var(--s4);
   align-items: flex-start;
-  border-color: rgba(255, 122, 26, 0.45);
-  background: radial-gradient(120% 140% at 0% 0%, rgba(255, 122, 26, 0.16), transparent 55%), linear-gradient(180deg, var(--panel-2), var(--panel));
+  border-color: rgba(47, 107, 255, 0.45);
+  background: radial-gradient(120% 140% at 0% 0%, rgba(47, 107, 255, 0.16), transparent 55%), linear-gradient(180deg, var(--panel-2), var(--panel));
 }
 .now-turn {
   border-color: var(--accent);
-  box-shadow: 0 0 0 1px var(--accent), 0 0 30px rgba(255, 122, 26, 0.25);
+  box-shadow: 0 0 0 1px var(--accent), 0 0 30px rgba(47, 107, 255, 0.25);
 }
 .now-storm {
   border-color: rgba(244, 63, 94, 0.6);
@@ -851,7 +857,7 @@ input:focus {
 }
 .tone-ok .ring-val {
   stroke: var(--ok);
-  color: rgba(52, 211, 153, 0.5);
+  color: rgba(163, 230, 53, 0.5);
 }
 .tone-warn .ring-val {
   stroke: var(--warn);
@@ -906,8 +912,8 @@ input:focus {
   transition: border-color 0.2s, background 0.2s;
 }
 .sys.on {
-  border-color: rgba(52, 211, 153, 0.35);
-  background: linear-gradient(180deg, rgba(52, 211, 153, 0.06), rgba(5, 8, 13, 0.35));
+  border-color: rgba(163, 230, 53, 0.35);
+  background: linear-gradient(180deg, rgba(163, 230, 53, 0.06), rgba(5, 8, 13, 0.35));
 }
 .sys-top {
   display: flex;
@@ -985,7 +991,7 @@ input:focus {
   transition: left 0.2s, background 0.2s;
 }
 .toggle.on {
-  background: rgba(52, 211, 153, 0.3);
+  background: rgba(163, 230, 53, 0.3);
   border-color: var(--ok);
 }
 .toggle.on .knob {
@@ -1221,10 +1227,10 @@ input:focus {
   display: grid;
   place-items: center;
   border-radius: 50%;
-  background: rgba(255, 122, 26, 0.16);
+  background: rgba(47, 107, 255, 0.16);
   border: 2px solid var(--accent);
   flex: none;
-  box-shadow: 0 0 40px rgba(255, 122, 26, 0.3);
+  box-shadow: 0 0 40px rgba(47, 107, 255, 0.3);
 }
 .caption-kicker {
   color: var(--accent);
@@ -1246,7 +1252,7 @@ input:focus {
 }
 .chart {
   background: rgba(8, 13, 21, 0.82);
-  border: 1px solid rgba(255, 122, 26, 0.5);
+  border: 1px solid rgba(47, 107, 255, 0.5);
   border-radius: var(--r);
   padding: var(--s3) var(--s4);
   backdrop-filter: blur(8px);
@@ -1344,8 +1350,8 @@ input:focus {
   gap: 0.35rem;
   padding: 0.35rem 0.8rem;
   border-radius: 999px;
-  background: rgba(52, 211, 153, 0.1);
-  border: 1px solid rgba(52, 211, 153, 0.35);
+  background: rgba(163, 230, 53, 0.1);
+  border: 1px solid rgba(163, 230, 53, 0.35);
   font-weight: 700;
   font-size: 0.88rem;
 }
@@ -1367,7 +1373,7 @@ input:focus {
   flex-direction: column;
   justify-content: center;
   gap: var(--s5);
-  background: radial-gradient(60% 50% at 80% 0%, rgba(255, 122, 26, 0.1), transparent 70%);
+  background: radial-gradient(60% 50% at 80% 0%, rgba(47, 107, 255, 0.1), transparent 70%);
 }
 .lobby-title {
   font-size: 2.6rem;
@@ -1390,7 +1396,7 @@ input:focus {
   gap: var(--s6);
   align-items: center;
   padding: var(--s6);
-  border-color: rgba(255, 122, 26, 0.35);
+  border-color: rgba(47, 107, 255, 0.35);
 }
 .qr-frame {
   position: relative;
@@ -1659,12 +1665,12 @@ input:focus {
   align-items: center;
   gap: var(--s6);
   padding: var(--s5) var(--s6);
-  border-color: rgba(255, 122, 26, 0.4);
-  background: radial-gradient(80% 160% at 0% 50%, rgba(255, 122, 26, 0.14), transparent 60%), linear-gradient(180deg, var(--panel-2), var(--panel));
+  border-color: rgba(47, 107, 255, 0.4);
+  background: radial-gradient(80% 160% at 0% 50%, rgba(47, 107, 255, 0.14), transparent 60%), linear-gradient(180deg, var(--panel-2), var(--panel));
 }
 .patch svg {
   display: block;
-  filter: drop-shadow(0 6px 20px rgba(255, 122, 26, 0.3));
+  filter: drop-shadow(0 6px 20px rgba(47, 107, 255, 0.3));
 }
 .debrief-head h1 {
   font-size: 2.4rem;
@@ -1731,7 +1737,7 @@ input:focus {
   font-weight: 700;
 }
 .card.real {
-  border-color: rgba(255, 122, 26, 0.5);
+  border-color: rgba(47, 107, 255, 0.5);
 }
 .big {
   font-size: 2.2rem;
@@ -2005,7 +2011,7 @@ input:focus {
 }
 .story-loading {
   position: absolute;
-  color: #ff9a4a;
+  color: #60a5fa;
   font: 800 2.4rem system-ui, sans-serif;
   letter-spacing: 0.3em;
   opacity: 0.6;
@@ -2143,7 +2149,7 @@ input:focus {
   right: 20px;
   bottom: 20px;
   z-index: 900;
-  background: #ff7a1a;
+  background: var(--accent);
   color: #fff;
   border: 0;
   border-radius: 999px;

@@ -17,6 +17,7 @@ import { startMirrorReceiver } from '../shared/rtc';
 import type { AstronautPose, Lang, RadioMessageType, RoomMeta, SimState } from '../shared/types';
 import { applyAction, applyControl, createInitialState, step, type ControlCommand } from '../sim/model';
 import { Banners, Caption, ChallengeStrip, ProtonChart, useBanners } from './Broadcast';
+import { HeroOverlay, Rail, StatColumn } from './Dash';
 import { Debrief } from './Debrief';
 import { EventFeed } from './EventFeed';
 import { Gauges } from './Gauges';
@@ -189,6 +190,7 @@ export function App() {
       step={obj.phaseStep}
       connected={connected}
       ready={ready}
+      cadetName={cadetName}
       mirrorLive={Boolean(stream)}
       broadcast={broadcast}
       overlay={broadcast && s.phase !== 'lobby' && s.phase !== 'debrief'}
@@ -290,11 +292,16 @@ export function App() {
   } else {
     body = (
       <main className="op">
-        <div className="op-left">
-          <MirrorView stream={stream} poseRef={poseRef} state={s} lang={lang}>
-            {alerts}
-            <Banners banners={banners} />
-          </MirrorView>
+        <StatColumn s={s} lang={lang} />
+        <div className="op-center">
+          <div className="hero">
+            <MirrorView stream={stream} poseRef={poseRef} state={s} lang={lang}>
+              <div className="hero-orbits" aria-hidden="true" />
+              {alerts}
+              <Banners banners={banners} />
+              <HeroOverlay s={s} lang={lang} step={obj.phaseStep} stepName={stepName} />
+            </MirrorView>
+          </div>
           <div className="op-bottom">
             <MapCard s={s} lang={lang} />
             <EventFeed s={s} lang={lang} />
@@ -302,9 +309,6 @@ export function App() {
         </div>
         <div className="op-right">
           <NowCard s={s} lang={lang} obj={obj} cmd={cmd} onRestart={() => void restart()} />
-          <section className="card gauges-card">
-            <Gauges s={s} lang={lang} />
-          </section>
           <Systems s={s} lang={lang} cmd={cmd} />
           <Radio s={s} lang={lang} last={lastRadio} onSend={radio} />
         </div>
@@ -314,9 +318,18 @@ export function App() {
 
   return (
     <div className={`mc ${broadcast ? 'is-bc' : 'is-op'} phase-${s.phase}`}>
-      {header}
+      <Rail
+        lang={lang}
+        broadcast={broadcast}
+        onData={() => setShowData(true)}
+        onLang={() => setLang(lang === 'en' ? 'az' : 'en')}
+        onBroadcast={() => setBroadcast((v) => !v)}
+      />
+      <div className="mc-main">
+        {header}
+        {body}
+      </div>
       {showData && <NasaDataPanel lang={lang} onClose={() => setShowData(false)} />}
-      {body}
       {s.flight?.status === 'flying' && !story && <FlightFilm state={s} stream={stream} poseRef={poseRef} lang={lang} />}
       {story && (
         <StoryIntro
