@@ -175,7 +175,7 @@ export function App() {
     <div className="mirror-alerts">
       {s.sun.blocked && s.switches.vsat !== 'up' && (
         <span className="alert-chip warn">
-          <Icon name="sun" size={16} /> {lang === 'az' ? 'Günəş örtülüb' : 'Sun blocked'} · ☀ {s.power.solarInKW.toFixed(1)} kW
+          <Icon name="sun" size={16} /> {lang === 'az' ? 'Panellər kölgədə' : 'Panels shaded'} · ☀ {s.power.solarInKW.toFixed(1)} kW
         </span>
       )}
       {s.sep.warning && (

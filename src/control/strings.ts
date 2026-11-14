@@ -110,8 +110,8 @@ const en = {
   'bc.factor': 'vs. before the flare',
   'bc.utc': 'UTC, 11 May 2024',
 
-  'banner.sunBlocked': 'Sun behind the ridge',
-  'banner.sunBlockedSub': 'Solar power 4.0 → 0.4 kW · raise the solar mast!',
+  'banner.sunBlocked': 'Ridge shadow on the solar panels',
+  'banner.sunBlockedSub': 'Solar power 4.0 → 0.4 kW · a 10 m mast catches the low Sun: raise it!',
   'banner.sepWarning': 'REAL STORM · NASA DONKI · 11 May 2024',
   'banner.sepWarningSub': 'A real solar flare — protons are on their way to the Moon',
   'banner.sepArrival': 'Protons are arriving',
@@ -276,8 +276,8 @@ const az: Record<SKey, string> = {
   'bc.factor': 'alovdan əvvəlki ilə',
   'bc.utc': 'UTC, 11 may 2024',
 
-  'banner.sunBlocked': 'Günəş silsilənin arxasındadır',
-  'banner.sunBlockedSub': 'Günəş enerjisi 4.0 → 0.4 kVt · günəş dirəyini qaldır!',
+  'banner.sunBlocked': 'Silsilə panelləri kölgələdi',
+  'banner.sunBlockedSub': 'Günəş enerjisi 4.0 → 0.4 kVt · 10 m dirək alçaq Günəşi tutur: qaldır!',
   'banner.sepWarning': 'REAL FIRTINA · NASA DONKI · 11 may 2024',
   'banner.sepWarningSub': 'Real Günəş alovu — protonlar Aya doğru gəlir',
   'banner.sepArrival': 'Protonlar gəlir',

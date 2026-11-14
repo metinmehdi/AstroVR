@@ -14,7 +14,7 @@ export const RADIO: Record<RadioMessageType, { en: string; az: string }> = {
   finishSample: { en: 'Mission Control. Finish the sample, quickly.', az: 'Missiya İdarəsi. Nümunəni tez bitir.' },
   goodJob: { en: 'Mission Control. Great work, astronaut.', az: 'Missiya İdarəsi. Əla iş, astronavt.' },
   sepWarning: { en: 'Mission Control. Solar storm warning. A big flare on the Sun. Protons are coming.', az: 'Missiya İdarəsi. Günəş fırtınası xəbərdarlığı. Günəşdə böyük alov. Protonlar gəlir.' },
-  sunBlocked: { en: 'Mission Control. The Sun went behind the ridge. Our solar power is dropping.', az: 'Missiya İdarəsi. Günəş silsilənin arxasına keçdi. Günəş enerjimiz azalır.' },
+  sunBlocked: { en: 'Mission Control. The Sun is so low that a ridge now shades our solar panels. Power is dropping.', az: 'Missiya İdarəsi. Günəş o qədər alçaqdır ki, silsilə günəş panellərimizi kölgələdi. Enerji azalır.' },
   abort: { en: 'Mission Control. Abort. Abort. Safe return to base.', az: 'Missiya İdarəsi. Missiya dayandırılır. Təhlükəsiz qayıdış.' },
   missionComplete: { en: 'Mission Control. Mission complete. Welcome home, astronaut.', az: 'Missiya İdarəsi. Missiya tamamlandı. Xoş gəldin, astronavt.' },
 };

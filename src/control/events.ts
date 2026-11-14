@@ -134,7 +134,7 @@ export function describeEvent(e: SimEvent, lang: Lang): EventText | null {
     case 'radioLost':
       return { icon: '📵', text: L(`Radio call lost (antenna OFF): “${radioLabel(lang, String(p.type))}”`, `Radio mesajı itdi (antenna sönük): “${radioLabel(lang, String(p.type))}”`), tone: 'danger', key: true };
     case 'sunBlocked':
-      return { icon: '🌑', text: L('Sun slid behind the ridge — solar power 4.0 → 0.4 kW', 'Günəş silsilənin arxasına keçdi — enerji 4.0 → 0.4 kVt'), tone: 'warn', key: true };
+      return { icon: '🌑', text: L('Low Sun: a ridge shades the low solar panels — power 4.0 → 0.4 kW', 'Alçaq Günəş: silsilə alçaq panelləri kölgələdi — enerji 4.0 → 0.4 kVt'), tone: 'warn', key: true };
     case 'sepWarning':
       return { icon: '☢️', text: L('REAL solar storm warning (NASA DONKI, 11 May 2024)', 'REAL Günəş fırtınası xəbərdarlığı (NASA DONKI, 11 may 2024)'), tone: 'danger', key: true };
     case 'sepArrival':
