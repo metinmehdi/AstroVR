@@ -87,7 +87,7 @@ export function App() {
   }, []);
 
   const cmd = (c: ControlCommand) => {
-    applyControl(sim.current, c);
+    applyControl(sim.current, c, SCENARIO);
     setView(structuredClone(sim.current));
   };
   const radio = (type: RadioMessageType) => {
@@ -125,6 +125,16 @@ export function App() {
           <p>{ready ? t(lang, 'control.ready') : t(lang, 'control.waiting')}</p>
           <button disabled={!ready} onClick={() => cmd({ kind: 'start' })}>
             {t(lang, 'control.start')}
+          </button>
+          <button
+            disabled={!ready}
+            title="60 s: stand on the Moon during the real storm"
+            onClick={() => {
+              cmd({ kind: 'quickMoon' });
+              setTimeout(() => radio('sepWarning'), 1500);
+            }}
+          >
+            ⚡ {lang === 'az' ? 'Münsif rejimi: Ayda dayan (60 s)' : 'Judge mode: stand on the Moon (60 s)'}
           </button>
           <TodaySun lang={lang} />
         </section>

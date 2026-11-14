@@ -25,7 +25,9 @@ export type ControlCommand =
   | { kind: 'switch'; key: 'antenna' | 'shelter' | 'greenhouse'; on: boolean }
   | { kind: 'raiseVsat' }
   | { kind: 'radio'; msgId: string; type: RadioMessageType }
-  | { kind: 'endMission' };
+  | { kind: 'endMission' }
+  /** Judge mode ("Stand on the Moon", 60 s): straight onto the surface, joining the REAL storm 45 s after its warning */
+  | { kind: 'quickMoon' };
 
 const SITES: SiteId[] = ['siteA', 'siteB'];
 
@@ -242,7 +244,10 @@ export function applyAction(s: SimState, action: AstronautAction, scenario: Scen
   }
 }
 
-export function applyControl(s: SimState, cmd: ControlCommand) {
+/** Judge mode joins the real storm this many seconds after the warning → protons arrive ~12 s into the demo. */
+export const QUICK_MOON_WARNING_AGO_S = 45;
+
+export function applyControl(s: SimState, cmd: ControlCommand, scenario?: Scenario) {
   switch (cmd.kind) {
     case 'start':
       if (s.phase === 'lobby') setPhase(s, 'briefing');
@@ -280,6 +285,18 @@ export function applyControl(s: SimState, cmd: ControlCommand) {
     case 'endMission':
       if (s.phase !== 'debrief') setPhase(s, 'debrief');
       return;
+    case 'quickMoon': {
+      if (s.phase !== 'lobby' || !scenario) return;
+      for (const i of CHECKLIST_ITEMS) s.checklist[i] = true;
+      s.evaStartedAt = s.t - (scenario.timeline.sepWarningAfterEvaS + QUICK_MOON_WARNING_AGO_S);
+      s.sun.blocked = true;
+      s.sep.warning = true;
+      s.astronaut = { waypointId: 'base', inAirlock: false, inShadow: false, distanceToBaseM: Math.round(pathToBaseM(scenario, 'base')) };
+      log(s, 'control', 'quickMoon');
+      s.phase = 'crisis';
+      s.phaseStartedAt = s.t;
+      return;
+    }
   }
 }
 

@@ -14,6 +14,7 @@ import { createMoonScene, type Quality } from '../scene/createMoonScene';
 import { HeadTracker, requestOrientationPermission } from './orientation';
 import { StereoRenderer } from './stereo';
 import { AstronautMission } from './mission';
+import { addVisor } from './visor';
 
 const params = new URLSearchParams(location.search);
 const quality: Quality = params.get('q') === 'high' ? 'high' : 'low';
@@ -59,6 +60,7 @@ async function main() {
   lamp.position.set(0, 0.15, 0);
   lamp.target.position.set(0, -0.6, -4);
   camera.add(lamp, lamp.target);
+  if (params.get('visor') !== '0') addVisor(camera);
   const moon = createMoonScene(SCENARIO, quality);
   moon.scene.add(rig);
 

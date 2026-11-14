@@ -82,6 +82,39 @@ function skyDirFromRaDec(raDeg: number, decDeg: number): THREE.Vector3 {
   return new THREE.Vector3(Math.cos(phi) * Math.sin(theta), Math.cos(theta), Math.sin(phi) * Math.sin(theta));
 }
 
+/** Procedural regolith grain (fine pebbles + dust tone variation), tiled every 6 m. Purely visual texture. */
+function regolithTexture(): THREE.CanvasTexture {
+  const c = document.createElement('canvas');
+  c.width = c.height = 256;
+  const g = c.getContext('2d')!;
+  const img = g.createImageData(256, 256);
+  for (let i = 0; i < 256 * 256; i++) {
+    const n = 150 + (noise2(i % 256, Math.floor(i / 256)) - 0.5) * 70;
+    img.data.set([n, n * 0.985, n * 0.96, 255], i * 4);
+  }
+  g.putImageData(img, 0, 0);
+  for (let k = 0; k < 220; k++) {
+    // small pebbles with a lit side
+    const x = noise2(k, 3) * 256;
+    const y = noise2(k, 7) * 256;
+    const r = 0.8 + noise2(k, 11) * 2.2;
+    g.fillStyle = 'rgba(40,38,36,0.55)';
+    g.beginPath();
+    g.arc(x + 0.8, y + 0.8, r, 0, Math.PI * 2);
+    g.fill();
+    g.fillStyle = 'rgba(205,200,192,0.6)';
+    g.beginPath();
+    g.arc(x, y, r * 0.8, 0, Math.PI * 2);
+    g.fill();
+  }
+  const t = new THREE.CanvasTexture(c);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.repeat.set(terrain.sizeM / 6, terrain.sizeM / 6);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = 4;
+  return t;
+}
+
 export function createMoonScene(scenario: Scenario, quality: Quality = 'low'): MoonScene {
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0x000000);
@@ -95,9 +128,10 @@ export function createMoonScene(scenario: Scenario, quality: Quality = 'low'): M
   const pos = geo.attributes.position as THREE.BufferAttribute;
   for (let i = 0; i < pos.count; i++) pos.setY(i, heightAt(pos.getX(i), pos.getZ(i)));
   geo.computeVertexNormals();
+  const grain = regolithTexture();
   const terrainMesh = new THREE.Mesh(
     geo,
-    new THREE.MeshStandardMaterial({ color: 0x8f8c87, roughness: 1, metalness: 0 }),
+    new THREE.MeshStandardMaterial({ color: 0x9a968f, map: grain, bumpMap: grain, bumpScale: 0.6, roughness: 1, metalness: 0 }),
   );
   terrainMesh.receiveShadow = true;
   terrainMesh.castShadow = true;

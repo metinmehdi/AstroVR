@@ -167,3 +167,17 @@ describe('comms + debrief', () => {
     expect(shadow).toBeLessThan(C.MISSION_DOSE_BUDGET_MGY);
   });
 });
+
+describe('judge mode', () => {
+  it('quickMoon puts the astronaut outside during the real storm; protons arrive within ~15 s', () => {
+    const s = createInitialState(SC);
+    applyControl(s, { kind: 'quickMoon' }, SC);
+    expect(s.phase).toBe('crisis');
+    expect(s.astronaut.waypointId).toBe('base');
+    expect(s.sep.warning).toBe(true);
+    run(s, 15);
+    expect(s.sep.active).toBe(true);
+    run(s, 45);
+    expect(s.phase).toBe('crisis'); // 60 s in the open must not abort the demo
+  });
+});

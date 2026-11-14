@@ -1,0 +1,8 @@
+{
+  "name": "AstroVR — My First Moon Mission",
+  "short_name": "AstroVR",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#000000",
+  "theme_color": "#000000"
+}
