@@ -1,10 +1,10 @@
 import { createClient, type RealtimeChannel, type SupabaseClient } from '@supabase/supabase-js';
-import type { ActionEnvelope, AstronautAction, AstronautPose, RadioMessage, RoomMeta, SimState } from '../types';
+import type { ActionEnvelope, AstronautAction, AstronautPose, RadioMessage, RoomMeta, RtcSignal, SimState } from '../types';
 import { makeId } from '../protocol';
 import type { Transport, Unsub } from './types';
 
-type EventName = 'hello' | 'meta' | 'state' | 'pose' | 'action' | 'radio' | 'ack';
-type Reliable = 'action' | 'radio';
+type EventName = 'hello' | 'meta' | 'state' | 'pose' | 'action' | 'radio' | 'signal' | 'ack';
+type Reliable = 'action' | 'radio' | 'signal';
 
 /**
  * One client per transport: realtime-js reuses channels by topic, so a shared client would hand a new transport the
@@ -55,7 +55,7 @@ export class SupabaseTransport implements Transport {
   /** Join the room channel; if the join stalls (slow venue Wi-Fi / far region) or drops, build a fresh channel. */
   private connect(): RealtimeChannel {
     const ch = this.client.channel(`astrovr:${this.code}`, { config: { broadcast: { self: false, ack: false } } });
-    for (const ev of ['hello', 'meta', 'state', 'pose', 'action', 'radio', 'ack'] as EventName[]) {
+    for (const ev of ['hello', 'meta', 'state', 'pose', 'action', 'radio', 'signal', 'ack'] as EventName[]) {
       ch.on('broadcast', { event: ev }, ({ payload }) => this.dispatch(ev, payload));
     }
     this.armJoinWatchdog(ch);
@@ -113,7 +113,7 @@ export class SupabaseTransport implements Transport {
       this.outbox.delete((payload as { id: string }).id);
       return;
     }
-    if (ev === 'action' || ev === 'radio') {
+    if (ev === 'action' || ev === 'radio' || ev === 'signal') {
       const id = (payload as { id: string }).id;
       this.raw('ack', { id }); // always ack, also duplicates, so the sender stops resending
       if (this.seen.has(id)) return;
@@ -195,6 +195,12 @@ export class SupabaseTransport implements Transport {
   }
   onRadio(cb: (msg: RadioMessage) => void) {
     return this.on('radio', cb);
+  }
+  sendSignal(sig: RtcSignal) {
+    this.reliable('signal', sig);
+  }
+  onSignal(cb: (sig: RtcSignal) => void) {
+    return this.on('signal', cb);
   }
   onConnection(cb: (connected: boolean) => void) {
     this.connListeners.add(cb);

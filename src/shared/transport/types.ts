@@ -4,6 +4,7 @@ import type {
   AstronautPose,
   RadioMessage,
   RoomMeta,
+  RtcSignal,
   SimState,
 } from '../types';
 
@@ -31,6 +32,10 @@ export interface Transport {
 
   sendRadio(msg: RadioMessage): void;
   onRadio(cb: (msg: RadioMessage) => void): Unsub;
+
+  /** WebRTC signalling (reliable, de-duplicated by id) */
+  sendSignal(sig: RtcSignal): void;
+  onSignal(cb: (sig: RtcSignal) => void): Unsub;
 
   onConnection(cb: (connected: boolean) => void): Unsub;
 

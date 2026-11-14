@@ -1,4 +1,4 @@
-import type { ActionEnvelope, AstronautAction, AstronautPose, RadioMessage, RoomMeta, SimState } from '../types';
+import type { ActionEnvelope, AstronautAction, AstronautPose, RadioMessage, RoomMeta, RtcSignal, SimState } from '../types';
 import { makeId } from '../protocol';
 import type { Transport, Unsub } from './types';
 
@@ -8,7 +8,8 @@ type Packet =
   | { t: 'state'; v: SimState }
   | { t: 'pose'; v: AstronautPose }
   | { t: 'action'; v: ActionEnvelope }
-  | { t: 'radio'; v: RadioMessage };
+  | { t: 'radio'; v: RadioMessage }
+  | { t: 'signal'; v: RtcSignal };
 type DataPacket = Exclude<Packet, { t: 'hello' }>;
 
 /**
@@ -37,7 +38,7 @@ export class LocalTransport implements Transport {
     }
     if (p.t === 'meta') this.lastMeta = p.v;
     if (p.t === 'state') this.lastState = p.v;
-    if (p.t === 'action' || p.t === 'radio') {
+    if (p.t === 'action' || p.t === 'radio' || p.t === 'signal') {
       const id = p.v.id;
       if (this.seen.has(id)) return;
       this.seen.add(id);
@@ -94,6 +95,13 @@ export class LocalTransport implements Transport {
   }
   onRadio(cb: (msg: RadioMessage) => void) {
     return this.on('radio', cb);
+  }
+  sendSignal(sig: RtcSignal) {
+    this.seen.add(sig.id);
+    this.send({ t: 'signal', v: sig });
+  }
+  onSignal(cb: (sig: RtcSignal) => void) {
+    return this.on('signal', cb);
   }
   onConnection(cb: (connected: boolean) => void) {
     cb(true);

@@ -158,6 +158,14 @@ export interface RadioMessage {
   lost?: boolean;
 }
 
+/** WebRTC signalling for the live phone → Mission Control mirror (carried by the reliable transport). */
+export interface RtcSignal {
+  id: string;
+  to: Role;
+  kind: 'request' | 'offer' | 'answer' | 'ice';
+  data?: unknown;
+}
+
 export interface RoomMeta {
   code: string;
   lang: Lang;
