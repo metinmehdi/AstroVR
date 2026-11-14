@@ -1,9 +1,9 @@
 import { createClient, type RealtimeChannel, type SupabaseClient } from '@supabase/supabase-js';
-import type { ActionEnvelope, AstronautAction, AstronautPose, RadioMessage, RoomMeta, RtcSignal, SimState } from '../types';
+import type { ActionEnvelope, AstronautAction, AstronautPose, FastMsg, RadioMessage, RoomMeta, RtcSignal, SimState } from '../types';
 import { makeId } from '../protocol';
 import type { Transport, Unsub } from './types';
 
-type EventName = 'hello' | 'meta' | 'state' | 'pose' | 'action' | 'radio' | 'signal' | 'ack';
+type EventName = 'hello' | 'meta' | 'state' | 'pose' | 'action' | 'radio' | 'signal' | 'ack' | 'fast';
 type Reliable = 'action' | 'radio' | 'signal';
 
 /**
@@ -55,7 +55,7 @@ export class SupabaseTransport implements Transport {
   /** Join the room channel; if the join stalls (slow venue Wi-Fi / far region) or drops, build a fresh channel. */
   private connect(): RealtimeChannel {
     const ch = this.client.channel(`astrovr:${this.code}`, { config: { broadcast: { self: false, ack: false } } });
-    for (const ev of ['hello', 'meta', 'state', 'pose', 'action', 'radio', 'signal', 'ack'] as EventName[]) {
+    for (const ev of ['hello', 'meta', 'state', 'pose', 'action', 'radio', 'signal', 'ack', 'fast'] as EventName[]) {
       ch.on('broadcast', { event: ev }, ({ payload }) => this.dispatch(ev, payload));
     }
     this.armJoinWatchdog(ch);
@@ -201,6 +201,12 @@ export class SupabaseTransport implements Transport {
   }
   onSignal(cb: (sig: RtcSignal) => void) {
     return this.on('signal', cb);
+  }
+  sendFast(msg: FastMsg) {
+    this.raw('fast', msg);
+  }
+  onFast(cb: (msg: FastMsg) => void) {
+    return this.on('fast', cb);
   }
   onConnection(cb: (connected: boolean) => void) {
     this.connListeners.add(cb);

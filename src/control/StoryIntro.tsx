@@ -15,7 +15,7 @@ export function StoryIntro({
   record?: boolean;
   /** set true from outside (the astronaut skipped in VR) to end the story now */
   skip?: boolean;
-  onPlay?: (tl: Timeline) => void;
+  onPlay?: (tl: Timeline, at: number) => void;
   onEnd: () => void;
 }) {
   const host = useRef<HTMLDivElement>(null);
@@ -33,7 +33,7 @@ export function StoryIntro({
     const p = new StoryPlayer({
       lang,
       record,
-      onPlay: (tl) => played.current?.(tl),
+      onPlay: (tl, at) => played.current?.(tl, at),
       onEnd: (blob) => {
         if (blob) {
           const a = document.createElement('a');

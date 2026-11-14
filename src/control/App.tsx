@@ -8,9 +8,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { StoryIntro } from './StoryIntro';
 import { FlightFilm } from './FlightFilm';
 import { onFilmProgress, preloadFilm } from '../shared/filmCache';
+import { sharedNow, startClockServer } from '../shared/clock';
+import { radioCallAt } from '../audio/voice';
+import { installLaptopAudio, laptopVoice, setLaptopAudioLang } from './laptopAudio';
 import QRCode from 'qrcode';
 import { createTransport, type Transport } from '../shared/transport';
-import { astronautUrl, makeId, makeRoomCode, STATE_PUBLISH_HZ } from '../shared/protocol';
+import { astronautUrl, COMM_DELAY_MS, makeId, makeRoomCode, STATE_PUBLISH_HZ } from '../shared/protocol';
 import { NOBILE_MAY2024 as SCENARIO } from '../shared/scenario';
 import { currentObjective } from '../shared/objective';
 import { startMirrorReceiver } from '../shared/rtc';
@@ -63,6 +66,7 @@ export function App() {
   const [filmPct, setFilmPct] = useState(0);
   useEffect(() => {
     void preloadFilm(); // the real flight footage, ready long before liftoff
+    installLaptopAudio(); // voices in sync with the headset (opens on the operator's first click)
     return onFilmProgress(setFilmPct);
   }, []);
   // the phone shows the same story in VR; if the astronaut skips there, the projector story ends too
@@ -95,6 +99,11 @@ export function App() {
       tx.current = transport;
       transport.onConnection(setConnected);
       transport.onPose((p) => (poseRef.current = p));
+      startClockServer(transport); // this laptop is the shared clock
+      // the headset's suit computer lines, spoken here at the same instant (the room hears what the cadet hears)
+      transport.onFast((m) => {
+        if (m.k === 'voice') void laptopVoice()?.sayAt(m.lang, m.line, m.at, 0.75);
+      });
       transport.onAction((env) => {
         if (env.action.kind === 'ready') setReady(true);
         applyAction(sim.current, env.action, SCENARIO);
@@ -112,6 +121,7 @@ export function App() {
 
   useEffect(() => {
     void tx.current?.setMeta(meta());
+    setLaptopAudioLang(lang);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lang, cadetName, ready]);
 
@@ -150,7 +160,10 @@ export function App() {
     const id = makeId();
     const lost = !sim.current.switches.antenna;
     cmd({ kind: 'radio', msgId: id, type });
-    tx.current?.sendRadio({ id, type, ts: Date.now(), lost });
+    const at = sharedNow() + COMM_DELAY_MS + 300; // the call reaches the Moon after the real light delay
+    tx.current?.sendRadio({ id, type, ts: Date.now(), lost, at });
+    const v = laptopVoice();
+    if (v && !lost) void radioCallAt(v, lang, type, at);
     setLastRadio({ id, type, at: sim.current.t, lost });
   };
   const restart = async () => {
@@ -232,7 +245,7 @@ export function App() {
           cmd({ kind: 'start' }); // the cadet waits in the capsule on the pad
           if (urlFlags.get('flight') === '0') cmd({ kind: 'skipFlight' });
           else if (storyOn) setStory('start');
-          else cmd({ kind: 'launch', short: shortFlight });
+          else cmd({ kind: 'launch', short: shortFlight, wall: sharedNow() + 500 });
         }}
         film={{ laptop: filmPct, phone: s.filmReady }}
         story={{
@@ -340,17 +353,17 @@ export function App() {
           lang={lang}
           record={story === 'record'}
           skip={storySkip}
-          onPlay={(tl) => {
+          onPlay={(tl, at) => {
             if (story === 'record') return;
             const id = Math.random().toString(36).slice(2, 10);
             storyRun.current = { id, seen: false };
-            cmd({ kind: 'story', play: true, id, starts: tl.starts.map(r3), durs: tl.durs.map(r3) });
+            cmd({ kind: 'story', play: true, id, starts: tl.starts.map(r3), durs: tl.durs.map(r3), at: Math.round(at) });
           }}
           onEnd={() => {
             if (storyRun.current) cmd({ kind: 'story', play: false });
             storyRun.current = null;
             setStorySkip(false);
-            if (story === 'start') cmd({ kind: 'launch', short: shortFlight });
+            if (story === 'start') cmd({ kind: 'launch', short: shortFlight, wall: sharedNow() + 500 });
             setStory(null);
           }}
         />

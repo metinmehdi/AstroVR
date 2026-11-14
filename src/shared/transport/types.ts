@@ -2,6 +2,7 @@ import type {
   ActionEnvelope,
   AstronautAction,
   AstronautPose,
+  FastMsg,
   RadioMessage,
   RoomMeta,
   RtcSignal,
@@ -36,6 +37,10 @@ export interface Transport {
   /** WebRTC signalling (reliable, de-duplicated by id) */
   sendSignal(sig: RtcSignal): void;
   onSignal(cb: (sig: RtcSignal) => void): Unsub;
+
+  /** fire-and-forget, sent at once (clock sync pings, synchronized voice cues) */
+  sendFast(msg: FastMsg): void;
+  onFast(cb: (msg: FastMsg) => void): Unsub;
 
   onConnection(cb: (connected: boolean) => void): Unsub;
 

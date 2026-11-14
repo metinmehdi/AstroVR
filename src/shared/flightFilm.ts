@@ -28,7 +28,7 @@ export interface FilmPlan {
   meco: number; // engines off → weightless
   transit: number; // engine burn to the Moon / approaching the Moon
   earthrise: number;
-  /** voice line id → time (played by Mission Control) */
+  /** voice line id → time (s since launch; played on the phone AND Mission Control at the same instant) */
   say: Record<string, number>;
   events: FilmEvent[];
 }
@@ -63,7 +63,7 @@ function build(short: boolean): FilmPlan {
   ];
   const say: Record<string, number> = short
     ? { countdown: 1, meco: meco + 0.1, earthrise: earthrise + 0.2 }
-    : { countdown: 5, maxQ: liftoff + 5, boosterSep: filmStart + 0.3, meco: meco + 0.1, transit: transit + 0.2, earthrise: earthrise + 0.3 };
+    : { moonikin: 0.2, countdown: 5.6, maxQ: liftoff + 5, boosterSep: filmStart + 0.3, meco: meco + 0.1, transit: transit + 0.2, earthrise: earthrise + 0.3 };
   return { total, ignite, liftoff, filmStart, offset: edit.offset, length: edit.length, meco, transit, earthrise, say, events };
 }
 

@@ -142,11 +142,11 @@ export class AstronautMission {
     }
     this.c.transport.sendAction({ kind: 'checklist', item });
     if (item === 'lookTraining') {
-      void this.audio.suit('lookDone', lineText(SUIT, 'lookDone', lang));
-      void this.audio.suit('commCheck', lineText(SUIT, 'commCheck', lang));
+      this.audio.suit('lookDone', lineText(SUIT, 'lookDone', lang));
+      this.audio.suit('commCheck', lineText(SUIT, 'commCheck', lang));
     }
-    if (item === 'suitCheck') void this.audio.suit('suitCheck', lineText(SUIT, 'suitCheck', lang));
-    if (item === 'toolCheck') void this.audio.suit('toolCheck', lineText(SUIT, 'toolCheck', lang));
+    if (item === 'suitCheck') this.audio.suit('suitCheck', lineText(SUIT, 'suitCheck', lang));
+    if (item === 'toolCheck') this.audio.suit('toolCheck', lineText(SUIT, 'toolCheck', lang));
   }
 
   /* ---------------------------------------------------------------- 3. routes and movement */
@@ -253,7 +253,7 @@ export class AstronautMission {
     if (!s || (s.phase !== 'surface' && s.phase !== 'crisis')) return;
     this.c.transport.sendAction({ kind: 'moveTo', waypointId: id });
     this.startLope(id);
-    if (this.localWp === 'airlock' && id === 'base') void this.audio.suit('hatchOpen', lineText(SUIT, 'hatchOpen', this.c.getLang()));
+    if (this.localWp === 'airlock' && id === 'base') this.audio.suit('hatchOpen', lineText(SUIT, 'hatchOpen', this.c.getLang()));
   }
 
   private startLope(id: string) {
@@ -291,12 +291,12 @@ export class AstronautMission {
       this.lope = null;
       this.gaze.pause(1.5);
       const w = this.wp(L0.wp);
-      if (w.siteId) void this.audio.suit('photoFirst', lineText(SUIT, 'photoFirst', this.c.getLang()));
+      if (w.siteId) this.audio.suit('photoFirst', lineText(SUIT, 'photoFirst', this.c.getLang()));
       if (L0.wp === 'base' && !this.flags.has('routeHint')) {
         this.flags.add('routeHint');
-        void this.audio.suit('chooseRoute', lineText(SUIT, 'chooseRoute', this.c.getLang()));
+        this.audio.suit('chooseRoute', lineText(SUIT, 'chooseRoute', this.c.getLang()));
       }
-      if (L0.wp === 'airlock' && this.c.getState()?.sep.warning) void this.audio.suit('inShelter', lineText(SUIT, 'inShelter', this.c.getLang()));
+      if (L0.wp === 'airlock' && this.c.getState()?.sep.warning) this.audio.suit('inShelter', lineText(SUIT, 'inShelter', this.c.getLang()));
     }
   }
 
@@ -328,7 +328,7 @@ export class AstronautMission {
       const rec = () => this.c.getState()?.samples.find((x) => x.siteId === siteId);
       const send = (kind: 'samplePhoto' | 'sampleCollect' | 'sampleMark', line: string | null) => () => {
         this.c.transport.sendAction({ kind, siteId });
-        if (line) void this.audio.suit(line, lineText(SUIT, line, this.c.getLang()));
+        if (line) this.audio.suit(line, lineText(SUIT, line, this.c.getLang()));
       };
       this.sampleUI.set(siteId, {
         photo: mk('📷', L('Photo + scale', 'Foto + miqyas'), -0.7, send('samplePhoto', null), () => here() && !rec()?.photo, 'photo'),
@@ -341,7 +341,7 @@ export class AstronautMission {
   /* ---------------------------------------------------------------- radio + storm */
   onRadio(msg: RadioMessage) {
     const lang = this.c.getLang();
-    void this.audio.radio(msg.type, lineText(RADIO, msg.type, lang));
+    this.audio.radio(msg.type, msg.at);
     this.guide.say(lineText(RADIO, msg.type, lang));
     this.clearCopy();
     const btn = makeButton('✅', 'COPY', '#3ddc84', 0.7);
@@ -435,7 +435,7 @@ export class AstronautMission {
     title.renderOrder = 994;
     this.c.camera.add(title);
     this.intro = { t: 0, dur: 9, title };
-    void this.audio.suit('intro', lineText(SUIT, 'intro', this.c.getLang()));
+    this.audio.suit('intro', lineText(SUIT, 'intro', this.c.getLang()));
   }
 
   private updateIntro(dt: number): boolean {
@@ -507,17 +507,17 @@ export class AstronautMission {
     const onMoon = !s?.flight || s.flight.status === 'landed';
     if (s && s.phase === 'briefing' && onMoon && !this.intro && !this.flags.has('welcome')) {
       this.flags.add('welcome');
-      void this.audio.suit('welcome', lineText(SUIT, 'welcome', lang));
+      this.audio.suit('welcome', lineText(SUIT, 'welcome', lang));
     }
     // storm warning → decision buttons once
     if (s?.sep.warning && !this.flags.has('storm')) {
       this.flags.add('storm');
-      void this.audio.suit('stormChoice', lineText(SUIT, 'stormChoice', lang));
+      this.audio.suit('stormChoice', lineText(SUIT, 'stormChoice', lang));
       if (!s.astronaut.inAirlock) this.showStormChoice();
     }
     if (s?.sep.active && !this.flags.has('protons')) {
       this.flags.add('protons');
-      void this.audio.suit('protonsArrived', lineText(SUIT, 'protonsArrived', lang));
+      this.audio.suit('protonsArrived', lineText(SUIT, 'protonsArrived', lang));
     }
 
     if (this.updateIntro(dt)) {

@@ -765,6 +765,11 @@ export class Flight {
     return this.flying;
   }
 
+  /** keep the flight on the shared clock (seconds since launch); small drift is ignored */
+  syncClock(sec: number) {
+    if (this.flying && Math.abs(this.t - sec) > 0.12) this.t = sec;
+  }
+
   /** debug: jump to a moment of the flight (seconds since the launch command) */
   debugSeek(sec: number) {
     if (this.flying) this.t = sec;

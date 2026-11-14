@@ -6,6 +6,7 @@
  */
 import * as THREE from 'three';
 import { StoryCanvas, type Timeline } from '../shared/storyFrames';
+import { sharedNow } from '../shared/clock';
 import type { Lang, SimState } from '../shared/types';
 import type { Gaze } from './gaze';
 import { makeButton, type Button3D } from './ui3d';
@@ -81,8 +82,9 @@ export class StoryVR {
     }
     if (this.current?.id === story.id) return;
     const total = story.starts.length ? story.starts[story.starts.length - 1] + story.durs[story.durs.length - 1] : 0;
-    // the state arrives a few hundred ms after the projector started
-    this.current = { id: story.id, tl: { starts: story.starts, durs: story.durs, total }, t0: performance.now() - 300 };
+    // shared clock → same frame as the projector (older Mission Control: the state arrives ~300 ms late)
+    const t0 = story.at !== undefined ? performance.now() - (sharedNow() - story.at) : performance.now() - 300;
+    this.current = { id: story.id, tl: { starts: story.starts, durs: story.durs, total }, t0 };
     if (!this.loading) this.loading = this.sc.load(true);
     const lang = this.getLang();
     this.skip.setText('⏭', lang === 'az' ? 'KEÇ' : 'SKIP');

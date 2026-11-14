@@ -1,4 +1,4 @@
-import type { ActionEnvelope, AstronautAction, AstronautPose, RadioMessage, RoomMeta, RtcSignal, SimState } from '../types';
+import type { ActionEnvelope, AstronautAction, AstronautPose, FastMsg, RadioMessage, RoomMeta, RtcSignal, SimState } from '../types';
 import { makeId } from '../protocol';
 import type { Transport, Unsub } from './types';
 
@@ -9,7 +9,8 @@ type Packet =
   | { t: 'pose'; v: AstronautPose }
   | { t: 'action'; v: ActionEnvelope }
   | { t: 'radio'; v: RadioMessage }
-  | { t: 'signal'; v: RtcSignal };
+  | { t: 'signal'; v: RtcSignal }
+  | { t: 'fast'; v: FastMsg };
 type DataPacket = Exclude<Packet, { t: 'hello' }>;
 
 /**
@@ -102,6 +103,12 @@ export class LocalTransport implements Transport {
   }
   onSignal(cb: (sig: RtcSignal) => void) {
     return this.on('signal', cb);
+  }
+  sendFast(msg: FastMsg) {
+    this.send({ t: 'fast', v: msg });
+  }
+  onFast(cb: (msg: FastMsg) => void) {
+    return this.on('fast', cb);
   }
   onConnection(cb: (connected: boolean) => void) {
     cb(true);

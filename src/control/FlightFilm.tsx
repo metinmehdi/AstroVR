@@ -3,17 +3,17 @@
  *   before the real footage: the astronaut's cabin view (live mirror) full screen + the countdown clock
  *   then: the REAL Artemis I footage full screen (same file as the capsule windows), the cabin view in a corner
  * Sound for the room: the real SLS roar (launch-pad microphone) from ignition, cut at engine cutoff (vacuum),
- * and the launch-control voice lines (AZ/EN TTS). Captions name each real event.
+ * and the launch-control voice lines (AZ/EN, Gemini TTS) — on the SHARED clock, so the headset plays every line at
+ * the same instant. Captions name each real event.
  */
 import { useEffect, useMemo, useRef, useState } from 'react';
-import available from '../audio/available.json';
-import { FLIGHT, lineText } from '../audio/lines';
+import { scheduleFlightSound } from '../audio/flightSound';
+import { sharedNow } from '../shared/clock';
 import { filmSrc } from '../shared/filmCache';
-import { FILM_CREDIT, ROAR_URL, filmPlan } from '../shared/flightFilm';
+import { FILM_CREDIT, filmPlan } from '../shared/flightFilm';
 import type { AstronautPose, Lang, SimState } from '../shared/types';
+import { laptopVoice } from './laptopAudio';
 import { MirrorView } from './MirrorView';
-
-const HAS: Record<Lang, Set<string>> = { en: new Set(available.en as string[]), az: new Set(available.az as string[]) };
 
 export function FlightFilm({
   state,
@@ -29,18 +29,16 @@ export function FlightFilm({
   const f = state.flight!;
   const plan = useMemo(() => filmPlan(f.short), [f.short]);
   const video = useRef<HTMLVideoElement>(null);
-  const roar = useRef<HTMLAudioElement | null>(null);
-  const said = useRef(new Set<string>());
   const anchor = useRef({ at: -1, t0: 0 });
   const [t, setT] = useState(0);
   const [hidden, setHidden] = useState(false);
   const [src] = useState(() => filmSrc()); // the in-memory copy (preloaded in the lobby) when ready
   const [vidReady, setVidReady] = useState(false);
 
-  // a smooth local clock anchored to the simulation's launch time
+  // the launch moment on the shared clock (same as the headset); older states: anchored to the simulation time
   const simT = state.t - f.at;
-  if (anchor.current.at !== f.at || Math.abs((performance.now() - anchor.current.t0) / 1000 - simT) > 0.5) {
-    anchor.current = { at: f.at, t0: performance.now() - simT * 1000 };
+  if (anchor.current.at !== f.at || (f.wall === undefined && Math.abs((performance.now() - anchor.current.t0) / 1000 - simT) > 0.5)) {
+    anchor.current = { at: f.at, t0: f.wall !== undefined ? performance.now() - (sharedNow() - f.wall) : performance.now() - simT * 1000 };
   }
   useEffect(() => {
     let raf = 0;
@@ -52,39 +50,14 @@ export function FlightFilm({
     return () => cancelAnimationFrame(raf);
   }, []);
 
-  // sound: real roar from ignition to engine cutoff, then silence (no sound in vacuum)
+  // sound: real roar + launch-control voices, scheduled once on the shared clock
   useEffect(() => {
-    const a = new Audio(ROAR_URL);
-    a.preload = 'auto';
-    roar.current = a;
-    return () => {
-      a.pause();
-      roar.current = null;
-    };
-  }, []);
-  useEffect(() => {
-    const a = roar.current;
-    if (!a) return;
-    if (t >= plan.ignite && t < plan.meco && a.paused && !said.current.has('_roar')) {
-      said.current.add('_roar');
-      a.currentTime = Math.max(0, t - plan.ignite);
-      a.volume = 1;
-      void a.play().catch(() => {});
-    }
-    if (t >= plan.meco && !a.paused) {
-      a.volume = Math.max(0, a.volume - 0.34);
-      if (a.volume <= 0.01) a.pause();
-    }
-    // launch-control voice lines on cue
-    for (const [id, at] of Object.entries(plan.say)) {
-      if (t >= at && t < at + 3 && !said.current.has(id)) {
-        said.current.add(id);
-        const text = lineText(FLIGHT, id, lang);
-        if (HAS[lang].has(id)) void new Audio(`/audio/${lang}/${id}.mp3`).play().catch(() => {});
-        else if ('speechSynthesis' in window) speechSynthesis.speak(Object.assign(new SpeechSynthesisUtterance(text), { lang: lang === 'az' ? 'tr-TR' : 'en-US' }));
-      }
-    }
-  }, [t, plan, lang]);
+    const v = laptopVoice();
+    if (!v) return;
+    const launchAt = f.wall ?? sharedNow() - (state.t - f.at) * 1000;
+    return scheduleFlightSound(v, plan, launchAt, lang, { voice: 1, roar: 1 });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [f.at, plan]);
 
   // the real footage, kept in step with the clock
   const filmTime = t >= plan.filmStart - 0.05 && t < plan.total + 0.5;

@@ -45,6 +45,9 @@ export function storyTimeline(lang: Lang, voiceDur: (number | null)[]): Timeline
   return { starts, durs, total: t };
 }
 
+/** when shot i's narration starts (s on the timeline) — same on the projector and in the headset */
+export const storyLineAt = (starts: number[], i: number) => starts[i] + (i === STORY_SHOTS.length - 1 ? 0.9 : 0.35);
+
 export function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((res, rej) => {
     const i = new Image();

@@ -1,14 +1,19 @@
 /**
  * Suit audio engine (owner: P5). Scientifically correct: there is NO sound in the lunar vacuum,
  * so everything is "inside the suit": breathing, fan, heartbeat, dosimeter clicks, radio, footsteps through the body.
- * All ambience is synthesized (no files). Voice: public/audio/{lang}/{id}.mp3 if present, else browser speech.
+ * All ambience is synthesized (no files). Voice: public/audio/{lang}/{id}.mp3 (Gemini TTS), played through Web Audio
+ * at a moment of the SHARED clock, so Mission Control speaks the same line at the same instant (src/audio/voice.ts).
  */
-import type { Lang } from '../shared/types';
-import available from './available.json';
+import { sharedNow } from '../shared/clock';
+import { makeId } from '../shared/protocol';
+import type { FastMsg, Lang } from '../shared/types';
+import { FLIGHT, RADIO, STORY, SUIT } from './lines';
 import { Score } from './score';
+import { VoicePlayer, radioCallAt, voiceUrl } from './voice';
+import { ROAR_URL } from '../shared/flightFilm';
 
-/** Voice files that exist in public/audio/{lang}/ (P5: add the id here after adding the mp3). Others use browser speech. */
-const HAS_FILE: Record<Lang, Set<string>> = { en: new Set(available.en as string[]), az: new Set(available.az as string[]) };
+// download order: what plays first (flight, story) before the mission lines
+export const ALL_LINES = [...Object.keys(FLIGHT), ...Object.keys(STORY), ...Object.keys(SUIT), ...Object.keys(RADIO)];
 
 export class SuitAudio {
   private ctx: AudioContext | null = null;
@@ -19,9 +24,22 @@ export class SuitAudio {
   private nextBeatAt = 0;
   private doseRate = 0; // mGy/h
   private stress = 0; // 0..1
-  private speaking = Promise.resolve();
   private cinematic: Score | null = null;
-  lang: Lang = 'en';
+  private busyUntil = 0; // shared ms: the voice channel is busy until then (lines never overlap)
+  private _lang: Lang = 'en';
+  /** synchronized voice player (after unlock) */
+  voice: VoicePlayer | null = null;
+  /** sends a voice cue to Mission Control, which plays the same line at the same moment */
+  share: ((m: FastMsg) => void) | null = null;
+
+  get lang() {
+    return this._lang;
+  }
+  set lang(l: Lang) {
+    if (l === this._lang) return;
+    this._lang = l;
+    this.voice?.preloadLines(l, ALL_LINES);
+  }
 
   /** Must be called from a user gesture (the START button). */
   unlock() {
@@ -38,6 +56,9 @@ export class SuitAudio {
     for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
     this.startFan();
     this.startBreath();
+    this.voice = new VoicePlayer(ctx, this.master);
+    this.voice.preloadLines(this._lang, ALL_LINES);
+    void this.voice.load(ROAR_URL); // the real SLS roar, decoded long before liftoff
   }
 
   private noiseSource(loop = true) {
@@ -175,28 +196,29 @@ export class SuitAudio {
   }
 
   /**
-   * Radio call: Apollo-style "Quindar" tones (2525 Hz intro, 2475 Hz outro), static, then the voice.
-   * Calls are queued so they never overlap.
+   * Radio call at shared time `at` (Mission Control chose it: send time + the 1.28 s light delay): "Quindar" beeps,
+   * static, the voice. Mission Control plays the same call at the same moment.
    */
-  radio(id: string, text: string) {
-    this.speaking = this.speaking.then(async () => {
-      if (!this.ctx) return;
-      const t = this.ctx.currentTime;
-      this.tone(t, 2525, 0.25, 0.12);
-      const stat = this.staticNoise(t + 0.25);
-      await sleep(300);
-      await this.say(id, text, 'radio');
-      this.tone(this.ctx.currentTime, 2475, 0.25, 0.12);
-      stat.stop(this.ctx.currentTime + 0.3);
-      await sleep(350);
+  radio(id: string, at = sharedNow() + 300) {
+    if (!this.voice || !this.ctx) return;
+    const v = this.voice;
+    const stat = this.staticNoise(Math.max(this.ctx.currentTime, v.ctxTimeFor(at - 300)));
+    void radioCallAt(v, this._lang, id, at).then((end) => {
+      this.busyUntil = Math.max(this.busyUntil, end);
+      stat.stop(Math.max(this.ctx!.currentTime, v.ctxTimeFor(end)));
     });
-    return this.speaking;
+    this.busyUntil = Math.max(this.busyUntil, at + 3000);
   }
 
-  /** Suit computer voice (no beeps). */
-  suit(id: string, text: string) {
-    this.speaking = this.speaking.then(() => this.say(id, text, 'suit'));
-    return this.speaking;
+  /** Suit computer voice: queued after the current line, shared with Mission Control (same instant on both). */
+  suit(id: string, text = '') {
+    if (!this.voice) return;
+    const lang = this._lang;
+    const dur = this.voice.duration(voiceUrl(lang, id)) ?? text.split(/\s+/).length / 2.6 + 0.5;
+    const at = Math.max(sharedNow() + 450, this.busyUntil + 250);
+    this.busyUntil = at + dur * 1000;
+    this.share?.({ k: 'voice', id: makeId(), line: id, lang, at, kind: 'suit' });
+    void this.voice.sayAt(lang, id, at, 0.9);
   }
 
   private staticNoise(t: number) {
@@ -212,36 +234,4 @@ export class SuitAudio {
     src.start(t);
     return src;
   }
-
-  private say(id: string, text: string, kind: 'radio' | 'suit'): Promise<void> {
-    if (!HAS_FILE[this.lang].has(id)) return this.speak(text);
-    return new Promise((resolve) => {
-      const audio = new Audio(`/audio/${this.lang}/${id}.mp3`);
-      audio.volume = kind === 'radio' ? 0.95 : 0.85;
-      audio.onended = () => resolve();
-      audio.onerror = () => this.speak(text).then(resolve);
-      audio.play().catch(() => this.speak(text).then(resolve));
-    });
-  }
-
-  private speak(text: string): Promise<void> {
-    return new Promise((resolve) => {
-      if (!('speechSynthesis' in window)) return resolve();
-      const u = new SpeechSynthesisUtterance(text);
-      const voices = speechSynthesis.getVoices();
-      const want = this.lang === 'az' ? ['az', 'tr'] : ['en'];
-      const v = want.map((w) => voices.find((x) => x.lang.toLowerCase().startsWith(w))).find(Boolean);
-      if (v) u.voice = v;
-      u.lang = v?.lang ?? (this.lang === 'az' ? 'tr-TR' : 'en-US');
-      u.rate = 0.95;
-      u.onend = () => resolve();
-      u.onerror = () => resolve();
-      speechSynthesis.speak(u);
-      setTimeout(resolve, 12000); // never block the queue forever
-    });
-  }
-}
-
-function sleep(ms: number) {
-  return new Promise((r) => setTimeout(r, ms));
 }

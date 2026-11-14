@@ -70,6 +70,8 @@ export interface FlightState {
   short: boolean;
   /** sim time (s) of the last status change */
   at: number;
+  /** shared clock (ms, src/shared/clock.ts) at launch: both devices schedule voices and the film from it */
+  wall?: number;
 }
 
 export interface SimState {
@@ -117,7 +119,7 @@ export interface SimState {
   phaseStartedAt: number;
   flight: FlightState | null;
   /** story intro playing on Mission Control (the phone shows it in VR on the same timeline); null = not playing */
-  story: { id: string; starts: number[]; durs: number[] } | null;
+  story: { id: string; starts: number[]; durs: number[]; /** shared clock (ms) of timeline zero */ at?: number } | null;
   /** the phone has the real flight footage in memory (lobby readiness chip) */
   filmReady: boolean;
   events: SimEvent[];
@@ -171,7 +173,15 @@ export interface RadioMessage {
   ts: number; // sender clock ms
   /** true when the antenna was off at send time → message never arrives */
   lost?: boolean;
+  /** shared clock (ms) when the voice starts on both devices (after the 1.28 s light delay) */
+  at?: number;
 }
+
+/** low-latency, fire-and-forget messages: clock sync and synchronized voice lines */
+export type FastMsg =
+  | { k: 'ping'; id: number; t0: number }
+  | { k: 'pong'; id: number; t0: number; tl: number }
+  | { k: 'voice'; id: string; line: string; lang: Lang; at: number; kind: 'suit' };
 
 /** WebRTC signalling for the live phone → Mission Control mirror (carried by the reliable transport). */
 export interface RtcSignal {

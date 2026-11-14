@@ -19,6 +19,12 @@ import { MirrorTap, startMirrorSender } from '../shared/rtc';
 import { Flight } from './flight';
 import { StoryVR } from './storyVR';
 import { preloadFilm } from '../shared/filmCache';
+import { clockInfo, sharedNow, startClockClient } from '../shared/clock';
+import { ROAR_URL, filmPlan } from '../shared/flightFilm';
+import { STORY_SHOTS, storyLineAt } from '../shared/storyFrames';
+import { scheduleFlightSound } from '../audio/flightSound';
+import { prefetchAudio, prefetchLines, type Playing } from '../audio/voice';
+import { ALL_LINES } from '../audio/engine';
 
 const params = new URLSearchParams(location.search);
 const quality: Quality = params.get('q') === 'high' ? 'high' : 'low';
@@ -49,6 +55,7 @@ async function main() {
   }
 
   const transport = await createTransport(code);
+  startClockClient(transport); // one clock with Mission Control → voices play on both devices at the same instant
 
   // ---- three.js
   const renderer = new THREE.WebGLRenderer({ antialias: quality === 'high', powerPreference: 'high-performance' });
@@ -87,6 +94,11 @@ async function main() {
   if (params.has('debug')) Object.assign(window as object, { astrovr: mission, astrovrHead: head, astrovrRenderer: renderer, astrovrSun: moon.sun });
 
   transport.onMeta((m) => {
+    if (m) {
+      // download the voices now (decoded after START): flight + story first
+      prefetchLines(m.lang, ALL_LINES);
+      prefetchAudio([ROAR_URL]);
+    }
     if (m && m.lang !== lang) {
       lang = m.lang;
       applyLang();
@@ -98,7 +110,9 @@ async function main() {
   // CAPCOM messages arrive after the real Earth–Moon light delay (1.28 s)
   transport.onRadio((msg: RadioMessage) => {
     if (msg.lost) return;
-    setTimeout(() => mission.onRadio(msg), COMM_DELAY_MS);
+    // Mission Control chose the moment (send + light delay): both devices play the call together
+    const at = msg.at ?? sharedNow() + COMM_DELAY_MS;
+    setTimeout(() => mission.onRadio({ ...msg, at }), Math.max(0, at - 320 - sharedNow()));
   });
 
   // rocket flight to the Moon (story mode): the cadet waits in the capsule, Mission Control launches after the story
@@ -106,7 +120,28 @@ async function main() {
   // the story intro on a cinema screen in the capsule (same timeline as the projector), SKIP by gaze
   const storyVR = new StoryVR(mission.gazeInput, () => transport.sendAction({ kind: 'skipStory' }), () => lang);
   flight.scene.add(storyVR.group);
-  if (params.has('debug')) Object.assign(window as object, { astrovrFlight: flight });
+  if (params.has('debug')) Object.assign(window as object, { astrovrFlight: flight, astrovrClock: clockInfo });
+  // synchronized sound (same instant as Mission Control): flight voices + real roar, story narration
+  let launchAt: number | null = null;
+  let stopFlightSound = () => {};
+  let storyVoice: { id: string; playing: Playing[] } | null = null;
+  const syncStoryVoice = (story: SimState['story']) => {
+    if (storyVoice && storyVoice.id !== story?.id) {
+      storyVoice.playing.forEach((h) => h.stop(0.4));
+      storyVoice = null;
+    }
+    const v = mission.audio.voice;
+    if (!story || story.at === undefined || storyVoice || !v) return;
+    const run = (storyVoice = { id: story.id, playing: [] as Playing[] });
+    STORY_SHOTS.forEach((shot, i) => {
+      if (i >= story.starts.length) return;
+      void v.sayAt(lang, shot.line, story.at! + storyLineAt(story.starts, i) * 1000, 0.95).then((h) => {
+        if (!h) return;
+        if (storyVoice === run) run.playing.push(h);
+        else h.stop();
+      });
+    });
+  };
   let started = false;
   const skipFlight = params.get('intro') === '0';
   const syncFlight = () => {
@@ -123,19 +158,28 @@ async function main() {
       flight.enterPad();
       mission.setInFlight(true, storyVR.targets);
       storyVR.sync(s.story);
+      syncStoryVoice(s.story);
       return;
     }
     storyVR.sync(null);
+    syncStoryVoice(null);
     if (s.phase === 'briefing' && f?.status === 'flying') {
       mission.setInFlight(true);
-      flight.launch(f.short, Math.max(0, s.t - f.at), () => {
+      launchAt = f.wall ?? sharedNow() - (s.t - f.at) * 1000;
+      flight.launch(f.short, Math.max(0, (sharedNow() - launchAt) / 1000), () => {
+        launchAt = null;
         mission.setInFlight(false);
         mission.startIntro(); // descent to the airlock over the real terrain
       });
+      stopFlightSound();
+      const v = mission.audio.voice;
+      if (v) stopFlightSound = scheduleFlightSound(v, filmPlan(f.short), launchAt, lang, { voice: 0.95, roar: 0.4 });
       return;
     }
     // no flight in this mission (judge mode, NEXT pressed, joined later)
     const wasInCapsule = flight.active;
+    stopFlightSound();
+    launchAt = null;
     flight.abort();
     mission.setInFlight(false);
     if (wasInCapsule && s.phase === 'briefing') mission.startIntro();
@@ -153,6 +197,7 @@ async function main() {
 
   startBtn.onclick = async () => {
     mission.audio.unlock(); // must happen inside the tap
+    mission.audio.share = (m) => transport.sendFast(m); // suit lines: Mission Control speaks them at the same instant
     flight.primeVideo(); // the real window film may then play without another gesture
     void preloadFilm().then((src) => src.startsWith('blob:') && transport.sendAction({ kind: 'filmReady' }));
     await requestOrientationPermission();
@@ -198,6 +243,7 @@ async function main() {
     head.update();
     moon.update(dt, state);
     syncFlight();
+    if (launchAt !== null) flight.syncClock((sharedNow() - launchAt) / 1000);
     storyVR.update(dt);
     flight.setCinema(storyVR.level > 0.02); // full-view story: hide the capsule and the world
     flight.update(dt);

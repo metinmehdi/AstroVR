@@ -8,12 +8,12 @@
  */
 import * as THREE from 'three';
 import available from '../../audio/available.json';
-import { STORY } from '../../audio/lines';
 import { Score } from '../../audio/score';
 import { createMoonScene, type MoonScene } from '../../scene/createMoonScene';
 import { createLaunchTower, createPadGround, createRocket, createSkyDome } from '../../scene/rocket';
 import { NOBILE_MAY2024 as SCENARIO } from '../../shared/scenario';
-import { STORY_SHOTS as SHOTS, StoryCanvas, storyTimeline, type ShotKind, type Timeline } from '../../shared/storyFrames';
+import { STORY_SHOTS as SHOTS, StoryCanvas, storyLineAt, storyTimeline, type ShotKind, type Timeline } from '../../shared/storyFrames';
+import { sharedNow } from '../../shared/clock';
 import type { Lang } from '../../shared/types';
 
 const W = 1600;
@@ -31,7 +31,8 @@ export interface StoryOptions {
   lang: Lang;
   record?: boolean;
   /** playback really started (assets loaded): the timeline, so the phone can show the same story in VR */
-  onPlay?: (tl: Timeline) => void;
+  /** at = shared clock (ms) of timeline zero, so the headset narrates in sync */
+  onPlay?: (tl: Timeline, at: number) => void;
   onEnd: (recording?: Blob) => void;
 }
 
@@ -86,7 +87,7 @@ export class StoryPlayer {
         if (!HAS_FILE[lang].has(s.line)) return null;
         const url = `/audio/${lang}/${s.line}.mp3`;
         try {
-          const buf = await (await fetch(url)).arrayBuffer();
+          const buf = await (await fetch(url, { headers: { Range: 'bytes=0-' } })).arrayBuffer(); // Range: see audio/voice.ts
           const b = await this.ctx.decodeAudioData(buf);
           return { buf: b, dur: b.duration };
         } catch {
@@ -117,8 +118,8 @@ export class StoryPlayer {
     const a0 = this.ctx.currentTime + lead;
     this.t0 = performance.now() + lead * 1000;
     this.score.story(tl.starts, tl.total, a0);
-    SHOTS.forEach((s, i) => {
-      const at = tl.starts[i] + (i === SHOTS.length - 1 ? 0.9 : 0.35);
+    SHOTS.forEach((_s, i) => {
+      const at = storyLineAt(tl.starts, i);
       const v = voices[i];
       if (v?.buf) {
         const src = this.ctx.createBufferSource();
@@ -138,8 +139,6 @@ export class StoryPlayer {
         }
         this.timers.push(window.setTimeout(() => void el.play().catch(() => {}), (lead + at) * 1000));
         this.duck(a0 + at, v.dur);
-      } else {
-        this.timers.push(window.setTimeout(() => this.speak(STORY[s.line][lang]), (lead + at) * 1000));
       }
     });
     if (this.opts.record && typeof MediaRecorder !== 'undefined') {
@@ -149,7 +148,8 @@ export class StoryPlayer {
       this.recorder.ondataavailable = (e) => e.data.size && this.chunks.push(e.data);
       this.recorder.start(500);
     }
-    this.opts.onPlay?.(tl);
+    const lat = (this.ctx as AudioContext & { outputLatency?: number }).outputLatency || this.ctx.baseLatency || 0;
+    this.opts.onPlay?.(tl, sharedNow() + (lead + lat) * 1000);
     const loop = () => {
       if (this.stopped) return;
       const el = Math.max(0, (performance.now() - this.t0) / 1000);
@@ -168,19 +168,6 @@ export class StoryPlayer {
     const g = this.score.out.gain;
     g.setTargetAtTime(0.5, at - 0.1, 0.12);
     g.setTargetAtTime(0.9, at + dur, 0.4);
-  }
-
-  private speak(text: string) {
-    if (!('speechSynthesis' in window)) return;
-    const u = new SpeechSynthesisUtterance(text);
-    const want = this.opts.lang === 'az' ? ['az', 'tr'] : ['en'];
-    const voices = speechSynthesis.getVoices();
-    const v = want.map((w) => voices.find((x) => x.lang.toLowerCase().startsWith(w))).find(Boolean);
-    if (v) u.voice = v;
-    u.lang = v?.lang ?? (this.opts.lang === 'az' ? 'tr-TR' : 'en-US');
-    u.rate = 0.88;
-    u.pitch = 0.8;
-    speechSynthesis.speak(u);
   }
 
   /** Skip / Esc / skipped in VR: end now (no recording is delivered). */

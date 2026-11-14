@@ -30,9 +30,9 @@ export type ControlCommand =
   /** Judge mode ("Stand on the Moon", 60 s): straight onto the surface, joining the REAL storm 45 s after its warning */
   | { kind: 'quickMoon' }
   /** after the story intro: the rocket lifts off (short = 20 s pitch version) */
-  | { kind: 'launch'; short?: boolean }
+  | { kind: 'launch'; short?: boolean; wall?: number }
   /** story intro started (with its timeline) or ended on Mission Control */
-  | { kind: 'story'; play: boolean; id?: string; starts?: number[]; durs?: number[] }
+  | { kind: 'story'; play: boolean; id?: string; starts?: number[]; durs?: number[]; at?: number }
   /** operator / tests: no rocket flight this time */
   | { kind: 'skipFlight' };
 
@@ -278,12 +278,12 @@ export function applyControl(s: SimState, cmd: ControlCommand, scenario?: Scenar
       if (s.flight && s.flight.status !== 'landed') s.flight = { ...s.flight, status: 'landed', at: s.t };
       return;
     case 'story':
-      s.story = cmd.play && cmd.id ? { id: cmd.id, starts: cmd.starts ?? [], durs: cmd.durs ?? [] } : null;
+      s.story = cmd.play && cmd.id ? { id: cmd.id, starts: cmd.starts ?? [], durs: cmd.durs ?? [], at: cmd.at } : null;
       return;
     case 'launch':
       if (s.phase === 'lobby') setPhase(s, 'briefing');
       if (s.phase !== 'briefing' || s.flight?.status === 'flying' || s.flight?.status === 'landed') return;
-      s.flight = { status: 'flying', short: Boolean(cmd.short), at: s.t };
+      s.flight = { status: 'flying', short: Boolean(cmd.short), at: s.t, wall: cmd.wall };
       log(s, 'control', 'launch', { short: Boolean(cmd.short) });
       return;
     case 'next':
