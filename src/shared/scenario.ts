@@ -14,8 +14,8 @@ export const NOBILE_MAY2024: Scenario = {
   title: { en: 'My First Moon Mission', az: 'İlk Ay Missiyam' },
   site: {
     name: 'Nobile Rim 1',
-    latDeg: -85.4, // TODO(P1): exact centre from NASA Artemis III region list / PGDA
-    lonDeg: 37.0,
+    latDeg: -85.3003, // sunniest LOLA pixel of Artemis III region Nobile Rim 1 (PGDA Site06)
+    lonDeg: 37.0989,
     source:
       'Terrain: NASA LRO LOLA (PGDA 5 m/px south-pole DEM). Same Artemis III candidate region NASA used for its 2024 VR moonwalk simulation at Johnson Space Center.',
   },
@@ -23,8 +23,8 @@ export const NOBILE_MAY2024: Scenario = {
     donkiIds: ['2024-05-11T01:10:00-FLR-001', '2024-05-11T02:10:00-SEP-001'],
     date: '2024-05-11',
     description: {
-      en: 'On 11 May 2024 a powerful solar flare erupted at 01:10 UTC. About one hour later the first very energetic protons (>100 MeV) arrived, and over the next hours the SOHO spacecraft measured penetrating protons rising about 25 times. NASA recorded the event in its space-weather database DONKI.',
-      az: '11 may 2024-cü ildə saat 01:10-da (UTC) Günəşdə güclü alov baş verdi. Təxminən bir saat sonra ilk çox enerjili protonlar (>100 MeV) gəldi, növbəti saatlarda SOHO kosmik aparatı nüfuzedici protonların təxminən 25 dəfə artdığını ölçdü. NASA bunu kosmik hava bazası DONKI-də qeydə alıb.',
+      en: 'On 11 May 2024 a powerful solar flare erupted at 01:10 UTC. About one hour later the first very energetic protons (>100 MeV) arrived, and over the next hours the SOHO spacecraft measured penetrating protons (25–53 MeV) rising about 30 times. NASA recorded the event in its space-weather database DONKI.',
+      az: '11 may 2024-cü ildə saat 01:10-da (UTC) Günəşdə güclü alov baş verdi. Təxminən bir saat sonra ilk çox enerjili protonlar (>100 MeV) gəldi, növbəti saatlarda SOHO kosmik aparatı nüfuzedici protonların (25–53 MeV) təxminən 30 dəfə artdığını ölçdü. NASA bunu kosmik hava bazası DONKI-də qeydə alıb.',
     },
     protonProfile: PROTON_PROFILE,
     stormMinutesPerRealSecond: STORM_MINUTES_PER_REAL_SECOND,

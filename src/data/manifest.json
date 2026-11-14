@@ -60,7 +60,7 @@
    "name": "CGI Moon Kit: LRO colour map of the poles",
    "org": "NASA Scientific Visualization Studio",
    "url": "https://svs.gsfc.nasa.gov/4720",
-   "usedFor": "Mission Control map of the lunar south pole"
+   "usedFor": "Reference image of the lunar south pole (not yet shown in the app)"
   },
   {
    "id": "lola-terrain",
@@ -88,14 +88,14 @@
    "name": "LRO Diviner surface temperature at the site: average ~130 K, maximum ~236–263 K; permanently shadowed craters ~25–40 K",
    "org": "NASA LRO Diviner (PDS Polar Resource Product)",
    "url": "https://pds-geosciences.wustl.edu/lro/urn-nasa-pds-lro_diviner_derived1/",
-   "usedFor": "Suit temperature: sunlit vs shadow"
+   "usedFor": "Reference fact shown in the science notes (not yet in the game mechanics)"
   },
   {
    "id": "bvad",
    "name": "Crew oxygen use 0.895 kg per person per day (NASA BVAD Rev 2, 2022, Table 3-31)",
    "org": "NASA",
    "url": "https://ntrs.nasa.gov/citations/20210024855",
-   "usedFor": "Oxygen model"
+   "usedFor": "Reference for the oxygen model (the suit model currently uses an 8-hour EVA design)"
   },
   {
    "id": "lsc-15415",
@@ -106,10 +106,10 @@
   },
   {
    "id": "artemis1-radiation",
-   "name": "Artemis I radiation measurements: storm shelter ≈ 4× lower dose (Nature 2024)",
+   "name": "Artemis I radiation study (George et al., Nature 2024): simulated Oct 1989 storm, storm shelter ≈ 4× lower dose",
    "org": "NASA / DLR",
    "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC11446838/",
-   "usedFor": "Shelter protection factor"
+   "usedFor": "Storm-shelter protection factor (from the study's simulation of the Oct 1989 storm)"
   },
   {
    "id": "osd-476",
@@ -117,6 +117,13 @@
    "org": "NASA OSDR",
    "url": "https://osdr.nasa.gov/bio/repo/data/studies/OSD-476",
    "usedFor": "Greenhouse stress mechanic"
+  },
+  {
+   "id": "phipps-2021",
+   "name": "NASA Geant4 modelling of solar-storm proton dose near lunar craters: ≥40% lower inside craters (Phipps et al., NESF 2021)",
+   "org": "NASA",
+   "url": "https://ntrs.nasa.gov/citations/20210021039",
+   "usedFor": "Terrain-shadow refuge protection factor (×0.6)"
   }
  ]
 }

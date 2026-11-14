@@ -47,11 +47,11 @@ export const DOSE_MGY_PER_H_PER_INTENSITY =
   (SOLID_ANGLE_SR * PROTON_STOPPING_POWER_MEV_CM2_PER_G * MEV_TO_J * 3600 * 1000) / 1e-3;
 /** Arrival = protons rise above this multiple of the pre-warning level. */
 export const SEP_ARRIVAL_FACTOR = 3;
-/** Artemis I storm shelter vs crew area: 95 / 414 ≈ 0.23 (≈ 4× less). */
+/** Artemis I study (George et al., Nature 634, 2024): SIMULATED Oct-1989 storm, storm shelter vs crew area 95/414 ≈ 0.23 (≈ 4× less). */
 export const SHELTER_FACTOR_POWERED = 95 / 414;
 /** Habitat walls only (protection system unpowered) — simplification. */
 export const SHELTER_FACTOR_UNPOWERED = 0.5;
-/** NASA modelling (LRO/CRaTER): inside craters SEP dose is reduced by at least 40%. */
+/** NASA Geant4 modelling (Phipps et al., NESF 2021, NTRS 20210021039): inside craters solar-storm proton dose is ≥40% lower, because terrain blocks part of the sky. */
 export const SHADOW_FACTOR = 0.6;
 export const OPEN_FACTOR = 1.0;
 /**
@@ -75,8 +75,8 @@ export const COPY_WINDOW_S = 15; // astronaut must answer "Copy" within this man
 
 export const SOURCES = {
   commDelay: 'Earth–Moon light time ≈ 1.28 s (384,400 km ÷ speed of light).',
-  shelter: 'Artemis I radiation measurements (Nature, 2024): storm shelter ≈ 4× lower dose than crew area (414 → 95 µGy/min, Oct-1989 storm simulation).',
-  shadow: 'Standing low against terrain blocks part of the sky. NASA lunar radiation modelling (LRO/CRaTER): inside craters solar-storm dose is reduced by ≥40%. The shadow spot is a REAL terrain shadow (LOLA + JPL Horizons).',
+  shelter: 'Artemis I radiation study (George et al., Nature 2024): in a simulation of the October 1989 storm, the Orion storm shelter got ≈ 4× less dose than the crew area (414 → 95 µGy/min).',
+  shadow: 'It is not the darkness that protects: standing low against terrain blocks part of the sky. NASA Geant4 modelling (Phipps et al. 2021, NTRS 20210021039): inside craters solar-storm proton dose is ≥40% lower. The refuge spot is a REAL terrain shadow (LOLA DEM + JPL Horizons Sun).',
   vsat: 'NASA Vertical Solar Array Technology (VSAT): ~10 m masts keep arrays in light at the lunar south pole.',
   greenhouse: 'NASA OSDR OSD-476: plants grown in real Apollo lunar soil showed stress responses.',
   storm: 'NASA DONKI: 11 May 2024 flare (01:10 UTC) → >100 MeV protons (02:10 UTC). Proton intensity: SOHO/EPHIN hourly data (NASA SPDF CDAWeb).',

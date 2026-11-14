@@ -1,12 +1,14 @@
 # AstroVR — My First Moon Mission
 
+**Live:** https://astro-vr-rose.vercel.app (Mission Control: `/control.html`, the astronaut joins by QR)
+
 **NASA Space Apps Challenge 2026 · Ganja, Azerbaijan · Challenge: _Build a Junior Astronaut Mission Trainer_ · Team UNECom**
 
 A two-player Moon mission trainer for kids aged 7–12.
 
 - 🧑‍🚀 **Astronaut:** a phone in a cheap VR box. The cadet stands on real NASA LOLA terrain of **Nobile Rim 1**, an Artemis III candidate region at the lunar south pole.
 - 🖥️ **Mission Control:** a laptop that runs the outpost: ⚡ power, 🫁 oxygen and ☢️ radiation shielding, plus a 🌱 greenhouse.
-- ☀️ **The crisis is real:** the Sun drops behind a ridge (south-pole lighting), then the **11 May 2024 solar storm recorded in NASA DONKI** arrives. The real ~60 min flare-to-proton warning becomes 60 s in game (1 real minute ≈ 1 EVA hour).
+- ☀️ **The crisis is real:** the Sun drops behind a ridge (south-pole lighting), then the **11 May 2024 solar storm recorded in NASA DONKI** arrives. The real proton rise measured by SOHO (~4 h after the flare) is replayed 4× faster than the mission clock, so it arrives ~57 s after the warning (1 real minute ≈ 1 EVA hour).
 - Every choice has a real cost:
   - storm shelter ≈ 4× less dose (Artemis I);
   - crater shadow −40% dose (LRO/CRaTER modelling);
@@ -47,10 +49,11 @@ Copy `.env.example` → `.env.local` and set the Supabase URL + anon key (Realti
 - SVS CGI Moon Kit
 - SVS Deep Star Maps
 - OSDR OSD-476
-- RadLab
+- ISS TEPC dosimeter (NASA SPDF CDAWeb)
+- JPL Horizons, NASA EPIC, NASA Images, LOLA illumination maps
 - Artemis I radiation measurements (Nature 2024)
 - NASA VSAT
 - Space Agency Partner: CSA food-production toolkit
 
 ## Use of AI
-AI tools (Claude Code, Codex) assisted with research and code. Voice lines are AI text-to-speech and are labelled as such. AI-generated images carry a visible watermark. The mission concept and design decisions are the team's own.
+AI tools (Claude Code, Codex) assisted with research and code. Voice lines are AI text-to-speech (OpenAI) when generated, otherwise the browser's built-in voice. No AI-generated images are used. The mission concept and design decisions are the team's own.

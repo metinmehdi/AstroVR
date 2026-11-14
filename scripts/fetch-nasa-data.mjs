@@ -352,7 +352,7 @@ await step('ISS TEPC dose', async () => {
 await step('SVS images', async () => {
   const items = [
     { url: 'https://svs.gsfc.nasa.gov/vis/a000000/a004800/a004851/starmap_2020_4k_print.jpg', file: 'public/textures/starmap.jpg', name: 'Deep Star Maps 2020 (Hipparcos-2, Tycho-2, Gaia DR2)', svs: 'https://svs.gsfc.nasa.gov/4851', usedFor: 'Real star positions in the black lunar sky' },
-    { url: 'https://svs.gsfc.nasa.gov/vis/a000000/a004700/a004720/lroc_color_poles_1k.jpg', file: 'public/images/moon-poles.jpg', name: 'CGI Moon Kit: LRO colour map of the poles', svs: 'https://svs.gsfc.nasa.gov/4720', usedFor: 'Mission Control map of the lunar south pole' },
+    { url: 'https://svs.gsfc.nasa.gov/vis/a000000/a004700/a004720/lroc_color_poles_1k.jpg', file: 'public/images/moon-poles.jpg', name: 'CGI Moon Kit: LRO colour map of the poles', svs: 'https://svs.gsfc.nasa.gov/4720', usedFor: 'Reference image of the lunar south pole (not yet shown in the app)' },
   ];
   for (const it of items) {
     await save(it.file, await get(it.url, 'buffer'));
@@ -362,10 +362,11 @@ await step('SVS images', async () => {
 
 // Facts read by the research agent from NASA documents (not fetched as data files)
 manifest.push(
-  { id: 'diviner', name: 'LRO Diviner surface temperature at the site: average ~130 K, maximum ~236–263 K; permanently shadowed craters ~25–40 K', org: 'NASA LRO Diviner (PDS Polar Resource Product)', url: 'https://pds-geosciences.wustl.edu/lro/urn-nasa-pds-lro_diviner_derived1/', usedFor: 'Suit temperature: sunlit vs shadow' },
-  { id: 'bvad', name: 'Crew oxygen use 0.895 kg per person per day (NASA BVAD Rev 2, 2022, Table 3-31)', org: 'NASA', url: 'https://ntrs.nasa.gov/citations/20210024855', usedFor: 'Oxygen model' },
+  { id: 'diviner', name: 'LRO Diviner surface temperature at the site: average ~130 K, maximum ~236–263 K; permanently shadowed craters ~25–40 K', org: 'NASA LRO Diviner (PDS Polar Resource Product)', url: 'https://pds-geosciences.wustl.edu/lro/urn-nasa-pds-lro_diviner_derived1/', usedFor: 'Reference fact shown in the science notes (not yet in the game mechanics)' },
+  { id: 'bvad', name: 'Crew oxygen use 0.895 kg per person per day (NASA BVAD Rev 2, 2022, Table 3-31)', org: 'NASA', url: 'https://ntrs.nasa.gov/citations/20210024855', usedFor: 'Reference for the oxygen model (the suit model currently uses an 8-hour EVA design)' },
   { id: 'lsc-15415', name: 'Apollo 15 sample 15415 "Genesis Rock": ferroan anorthosite, 98% plagioclase, ~4 billion years', org: 'NASA JSC Lunar Sample Compendium', url: 'https://curator.jsc.nasa.gov/lunar/lsc/15415.pdf', usedFor: 'Science card after collecting a sample' },
-  { id: 'artemis1-radiation', name: 'Artemis I radiation measurements: storm shelter ≈ 4× lower dose (Nature 2024)', org: 'NASA / DLR', url: 'https://www.ncbi.nlm.nih.gov/pmc/articles/PMC11446838/', usedFor: 'Shelter protection factor' },
+  { id: 'artemis1-radiation', name: 'Artemis I radiation study (George et al., Nature 2024): simulated Oct 1989 storm, storm shelter ≈ 4× lower dose', org: 'NASA / DLR', url: 'https://www.ncbi.nlm.nih.gov/pmc/articles/PMC11446838/', usedFor: "Storm-shelter protection factor (from the study's simulation of the Oct 1989 storm)" },
+  { id: 'phipps-2021', name: 'NASA Geant4 modelling of solar-storm proton dose near lunar craters: ≥40% lower inside craters (Phipps et al., NESF 2021)', org: 'NASA', url: 'https://ntrs.nasa.gov/citations/20210021039', usedFor: 'Terrain-shadow refuge protection factor (×0.6)' },
   { id: 'osd-476', name: 'Plants grown in Apollo lunar regolith show stress responses (OSD-476)', org: 'NASA OSDR', url: 'https://osdr.nasa.gov/bio/repo/data/studies/OSD-476', usedFor: 'Greenhouse stress mechanic' },
 );
 
