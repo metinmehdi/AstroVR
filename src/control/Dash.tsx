@@ -9,6 +9,7 @@ import type { Lang, SimState } from '../shared/types';
 import * as K from '../sim/constants';
 import { Ring } from './Gauges';
 import { Icon } from './icons';
+import { SignalLink } from './Space';
 import { tr, type SKey } from './strings';
 
 const L = (lang: Lang, en: string, az: string) => (lang === 'az' ? az : en);
@@ -194,6 +195,8 @@ export function StatColumn({ s, lang }: { s: SimState; lang: Lang }) {
           </div>
         </div>
       </section>
+
+      <SignalLink lang={lang} on={s.switches.antenna} />
 
       <section className="card glass bars-card">
         <div className="bars-head">

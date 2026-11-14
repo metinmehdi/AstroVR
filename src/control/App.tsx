@@ -18,6 +18,7 @@ import type { AstronautPose, Lang, RadioMessageType, RoomMeta, SimState } from '
 import { applyAction, applyControl, createInitialState, step, type ControlCommand } from '../sim/model';
 import { Banners, Caption, ChallengeStrip, ProtonChart, useBanners } from './Broadcast';
 import { HeroOverlay, Rail, StatColumn } from './Dash';
+import { HeroZoom, OrbitOverlay, Starfield } from './Space';
 import { Debrief } from './Debrief';
 import { EventFeed } from './EventFeed';
 import { Gauges } from './Gauges';
@@ -48,6 +49,7 @@ export function App() {
   const tx = useRef<Transport | null>(null);
   const poseRef = useRef<AstronautPose | null>(null);
   const [showData, setShowData] = useState(false);
+  const [wide, setWide] = useState(false); // magnifier: widen the helmet camera
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [broadcast, setBroadcast] = useState(() => new URLSearchParams(location.search).get('view') === 'broadcast');
   const [lastRadio, setLastRadio] = useState<LastRadio | null>(null);
@@ -291,16 +293,17 @@ export function App() {
     );
   } else {
     body = (
-      <main className="op">
+      <main className={`op ${wide ? 'wide' : ''}`}>
         <StatColumn s={s} lang={lang} />
         <div className="op-center">
           <div className="hero">
             <MirrorView stream={stream} poseRef={poseRef} state={s} lang={lang}>
-              <div className="hero-orbits" aria-hidden="true" />
+              <OrbitOverlay />
               {alerts}
               <Banners banners={banners} />
               <HeroOverlay s={s} lang={lang} step={obj.phaseStep} stepName={stepName} />
             </MirrorView>
+            <HeroZoom lang={lang} wide={wide} setWide={setWide} />
           </div>
           <div className="op-bottom">
             <MapCard s={s} lang={lang} />
@@ -318,6 +321,7 @@ export function App() {
 
   return (
     <div className={`mc ${broadcast ? 'is-bc' : 'is-op'} phase-${s.phase}`}>
+      {!broadcast && <Starfield />}
       <Rail
         lang={lang}
         broadcast={broadcast}

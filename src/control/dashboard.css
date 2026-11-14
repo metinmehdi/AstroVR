@@ -400,20 +400,9 @@ h3,
   background: radial-gradient(120% 90% at 50% 50%, transparent 55%, rgba(3, 6, 12, 0.55) 100%);
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04), inset 0 0 70px rgba(37, 99, 235, 0.18);
 }
-.hero-orbits {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  z-index: 1;
-  opacity: 0.55;
-  background:
-    radial-gradient(closest-side at 50% 52%, transparent 86%, rgba(96, 165, 250, 0.32) 86.4%, transparent 87%),
-    radial-gradient(closest-side at 50% 52%, transparent 93%, rgba(96, 165, 250, 0.2) 93.3%, transparent 93.8%),
-    radial-gradient(closest-side at 50% 52%, transparent 99%, rgba(96, 165, 250, 0.14) 99.3%, transparent 100%);
-  mix-blend-mode: screen;
-}
 .hero .mirror-alerts {
   z-index: 3;
+  right: 4.4rem;
 }
 .hero .mirror-badges {
   z-index: 3;
@@ -841,5 +830,301 @@ h3,
   }
   .hero {
     aspect-ratio: 16 / 10;
+  }
+}
+
+/* =====================================================================================================
+   MOTION — starfield, orbits, Earth→Moon link, wide (magnifier) mode, entrance animations.
+   control.css switches every CSS animation off under prefers-reduced-motion; Space.tsx skips SMIL there too.
+   ===================================================================================================== */
+.starfield {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 0;
+  pointer-events: none;
+}
+.rail,
+.mc-main {
+  position: relative;
+  z-index: 1;
+}
+.rail {
+  position: sticky;
+}
+
+/* ---- magnifier: the helmet camera grows left and right, the side columns shrink */
+.op {
+  transition: grid-template-columns 0.55s cubic-bezier(0.2, 0.8, 0.2, 1), gap 0.55s ease;
+}
+.op.wide {
+  grid-template-columns: minmax(10rem, 12.5rem) minmax(0, 1fr) minmax(17rem, 20rem);
+  gap: var(--s3);
+}
+.op.wide .stats,
+.op.wide .op-right {
+  zoom: 0.78;
+}
+.op.wide .op-right .sys-grid {
+  grid-template-columns: 1fr;
+}
+.op-bottom {
+  transition: flex-basis 0.55s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.op.wide .op-bottom {
+  flex-basis: 24%;
+}
+.op.wide .hero-card,
+.op.wide .hero-rings,
+.op.wide .mirror-alerts,
+.op.wide .banners,
+.op.wide .mirror-badges {
+  zoom: 0.8;
+}
+.hero-zoom {
+  position: absolute;
+  top: var(--s3);
+  right: var(--s3);
+  z-index: 6;
+  width: 2.75rem;
+  height: 2.75rem;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  background: rgba(3, 6, 12, 0.55);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: #dbe6f8;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  transition: background 0.2s, border-color 0.2s, transform 0.15s, box-shadow 0.2s;
+}
+.hero-zoom:hover {
+  background: rgba(47, 107, 255, 0.35);
+  border-color: rgba(122, 165, 255, 0.7);
+  transform: scale(1.06);
+}
+.hero-zoom:active {
+  transform: scale(0.96);
+}
+.hero-zoom.on {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  box-shadow: 0 8px 26px rgba(37, 99, 235, 0.55);
+}
+.hero-zoom:focus-visible {
+  outline: 2px solid var(--accent-2);
+  outline-offset: 3px;
+}
+
+/* ---- orbits over the helmet camera */
+.orbits {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  pointer-events: none;
+  mix-blend-mode: screen;
+  opacity: 0.75;
+}
+.orb {
+  fill: none;
+  stroke: rgba(96, 165, 250, 0.28);
+  stroke-width: 1.2;
+  vector-effect: non-scaling-stroke;
+}
+.orb-dash {
+  stroke: rgba(96, 165, 250, 0.38);
+  stroke-dasharray: 2 10;
+  animation: orbDash 18s linear infinite;
+}
+@keyframes orbDash {
+  to {
+    stroke-dashoffset: -240;
+  }
+}
+
+/* ---- Earth → Moon link */
+.link-card {
+  padding: var(--s3) var(--s4) !important;
+}
+.link-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--s2);
+}
+.link-head b {
+  font-family: var(--head-font);
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+.link-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.link-state.ok {
+  color: var(--ok);
+}
+.link-state.ok .dot {
+  animation: blink 1.28s ease-in-out infinite;
+}
+.link-state.bad {
+  color: var(--danger);
+}
+.link-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin: 0.3rem 0 0.1rem;
+  overflow: visible;
+}
+.beam {
+  fill: none;
+  stroke: rgba(122, 165, 255, 0.45);
+  stroke-width: 1.4;
+  stroke-dasharray: 3 5;
+  animation: beamFlow 1.28s linear infinite;
+}
+@keyframes beamFlow {
+  to {
+    stroke-dashoffset: -16;
+  }
+}
+.link-card.off .beam {
+  stroke: rgba(244, 63, 94, 0.55);
+  stroke-dasharray: 2 9;
+  animation: none;
+}
+.packet {
+  fill: var(--ok);
+  filter: drop-shadow(0 0 4px var(--ok));
+}
+.earth-halo {
+  transform-origin: 22px 35px;
+  animation: halo 2.6s ease-in-out infinite;
+}
+@keyframes halo {
+  50% {
+    transform: scale(1.12);
+    opacity: 0.35;
+  }
+}
+.link-foot {
+  font-size: 0.68rem;
+}
+
+/* ---- live touches */
+.step.cur {
+  background: linear-gradient(110deg, #2f6bff 0%, #2f6bff 40%, #6b9bff 50%, #2f6bff 60%, #2f6bff 100%);
+  background-size: 260% 100%;
+  animation: shimmer 3.2s linear infinite;
+}
+@keyframes shimmer {
+  from {
+    background-position: 130% 0;
+  }
+  to {
+    background-position: -130% 0;
+  }
+}
+.hero-card-head .dot,
+.avatar-dot {
+  animation: blink 1.6s ease-in-out infinite;
+}
+.spark-dot {
+  animation: sparkPulse 1.8s ease-in-out infinite;
+}
+@keyframes sparkPulse {
+  50% {
+    filter: drop-shadow(0 0 5px var(--ok));
+    opacity: 0.6;
+  }
+}
+.hero .mirror {
+  animation: heroGlow 6s ease-in-out infinite;
+}
+@keyframes heroGlow {
+  50% {
+    box-shadow: 0 0 0 1px rgba(3, 6, 12, 0.9), 0 0 90px rgba(37, 99, 235, 0.34), 0 30px 60px rgba(0, 0, 0, 0.55);
+  }
+}
+.tile-ico {
+  transition: transform 0.25s;
+}
+.tile:hover .tile-ico {
+  transform: translateY(-2px) rotate(-6deg);
+}
+
+/* ---- entrance: cards rise in one after another */
+.stats > *,
+.op-right > *,
+.op-bottom > *,
+.hero {
+  animation: rise 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.hero {
+  animation-delay: 0.05s;
+}
+.stats > :nth-child(1) {
+  animation-delay: 0.1s;
+}
+.stats > :nth-child(2) {
+  animation-delay: 0.16s;
+}
+.stats > :nth-child(3) {
+  animation-delay: 0.22s;
+}
+.stats > :nth-child(4) {
+  animation-delay: 0.28s;
+}
+.stats > :nth-child(5) {
+  animation-delay: 0.34s;
+}
+.op-right > :nth-child(1) {
+  animation-delay: 0.12s;
+}
+.op-right > :nth-child(2) {
+  animation-delay: 0.2s;
+}
+.op-right > :nth-child(3) {
+  animation-delay: 0.28s;
+}
+.op-bottom > :nth-child(1) {
+  animation-delay: 0.24s;
+}
+.op-bottom > :nth-child(2) {
+  animation-delay: 0.32s;
+}
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+}
+.bar-fill {
+  transform-origin: bottom;
+  animation: grow 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) 0.4s both;
+}
+@keyframes grow {
+  from {
+    transform: scaleY(0);
+  }
+}
+.hero-ring .ring {
+  animation: ringIn 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) 0.3s both;
+}
+@keyframes ringIn {
+  from {
+    opacity: 0;
+    transform: scale(0.7) rotate(-40deg);
   }
 }

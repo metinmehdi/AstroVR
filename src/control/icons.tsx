@@ -144,6 +144,18 @@ const P: Record<string, ReactNode> = {
       <path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .9-1 1.7v.5M12 17v.5" />
     </>
   ),
+  zoomIn: (
+    <>
+      <circle cx="11" cy="11" r="7" />
+      <path d="m20 20-4-4M8 11h6M11 8v6" />
+    </>
+  ),
+  zoomOut: (
+    <>
+      <circle cx="11" cy="11" r="7" />
+      <path d="m20 20-4-4M8 11h6" />
+    </>
+  ),
   qr: (
     <>
       <rect x="3" y="3" width="7" height="7" />
