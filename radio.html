@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="az">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+    <meta name="theme-color" content="#03060c" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <title>AstroVR · Moon Base Radio</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27%3E%3Ctext y=%27.9em%27 font-size=%2790%27%3E%F0%9F%93%BB%3C/text%3E%3C/svg%3E" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
+  </head>
+  <body>
+    <div id="app">
+      <header class="top">
+        <div class="brand">
+          <span class="brand-mark">📻</span>
+          <div>
+            <div class="brand-title" data-i18n="title">Ay Bazası Radiosu</div>
+            <div class="brand-sub"><span id="room-chip">—</span></div>
+          </div>
+        </div>
+        <div class="status" id="status"><span class="dot"></span><span id="status-text">…</span></div>
+      </header>
+
+      <section class="link" aria-hidden="true">
+        <div class="body earth"><span>🌍</span><small data-i18n="earth">Yer</small></div>
+        <div class="path">
+          <div class="track"></div>
+          <div class="pulse" id="pulse"></div>
+          <div class="leg" id="leg">1.3 s</div>
+        </div>
+        <div class="body moon"><span>🌕</span><small data-i18n="moon">Ay</small></div>
+      </section>
+
+      <section class="commander">
+        <div class="avatar" id="avatar"><span>N</span></div>
+        <div>
+          <div class="cmd-name" data-i18n="cmdName">Komandir Nova</div>
+          <div class="cmd-where" data-i18n="cmdWhere">Artemis bazası · Ayın cənub qütbü</div>
+        </div>
+      </section>
+
+      <section class="log" id="log" aria-live="polite"></section>
+
+      <div class="hint" id="hint"></div>
+
+      <section class="ptt-wrap">
+        <button class="ptt" id="ptt" type="button" disabled>
+          <span class="ring" id="ring"></span>
+          <span class="ptt-icon">🎙️</span>
+          <span class="ptt-label" id="ptt-label">BAS VƏ DANIŞ</span>
+        </button>
+      </section>
+
+      <footer class="foot">
+        <div class="toggles">
+          <div class="seg" id="lang">
+            <button data-lang="az" type="button">AZ</button>
+            <button data-lang="en" type="button">EN</button>
+          </div>
+          <button class="chip" id="fx" type="button"></button>
+          <button class="chip" id="delay" type="button"></button>
+        </div>
+        <p class="ai-note" data-i18n="aiNote">🤖 Komandirin səsi süni intellektdir (Google Gemini Live), real vaxtda yaranır. Mikrofon yalnız düymə basılı olanda işləyir.</p>
+      </footer>
+    </div>
+
+    <div id="arm" class="arm">
+      <div class="arm-card">
+        <div class="arm-emoji">📻🌕</div>
+        <h1 data-i18n="armTitle">Ay bazası ilə rabitə</h1>
+        <p data-i18n="armText">Düyməni basıb saxla, danış, burax. Komandir Nova Aydan cavab verəcək. Siqnal Aya 1.3 saniyəyə gedir!</p>
+        <label class="room-field">
+          <span data-i18n="roomLabel">Otaq kodu (vacib deyil)</span>
+          <input id="room-input" maxlength="6" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="ABCD" />
+        </label>
+        <button id="arm-btn" class="arm-btn" type="button" data-i18n="armBtn">📻 RABİTƏNİ AÇ</button>
+        <p class="arm-err" id="arm-err"></p>
+      </div>
+    </div>
+
+    <script type="module" src="/src/radio/main.ts"></script>
+  </body>
+</html>
