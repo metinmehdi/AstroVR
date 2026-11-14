@@ -200,6 +200,9 @@ export class Guide {
     window.dispatchEvent(new Event('astrovr:step'));
   }
 
+  /** false on the projector twin: Mission Control shows the same information in its own panels */
+  hudEnabled = true;
+
   hideAll() {
     this.beams.forEach((b) => (b.visible = false));
     this.halo.visible = false;
@@ -209,6 +212,7 @@ export class Guide {
 
   update(dt: number, moving: boolean) {
     this.t += dt;
+    this.hud.visible = this.hudEnabled;
     // HUD lazy-follows the head yaw, stays at eye level, a bit above centre
     const camPos = this.camera.getWorldPosition(this.tmp.clone());
     const dir = new THREE.Vector3();

@@ -61,6 +61,7 @@ function build() {
     getState: () => feed!.getState(),
     getLang: () => feed!.getLang(),
   });
+  mission.showHud(false); // the console already shows the step, the task and the vitals
   world = { renderer, camera, moon, mission, lamp };
 }
 

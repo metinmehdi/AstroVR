@@ -488,6 +488,11 @@ export class AstronautMission {
     if (v) this.guide.hideAll();
   }
 
+  /** the in-view HUD card (off on the projector twin, where Mission Control's panels show the same) */
+  showHud(v: boolean) {
+    this.guide.hudEnabled = v;
+  }
+
   /** the gaze input, so the capsule's story screen can add its SKIP button */
   get gazeInput(): Gaze {
     return this.gaze;

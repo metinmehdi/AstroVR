@@ -110,10 +110,10 @@ export class Flight {
 
     // the real footage, far behind the windows (reads as "outside"); hidden until it can play
     this.video = document.createElement('video');
-    this.video.src = filmSrc();
     this.video.muted = true;
     this.video.playsInline = true;
-    this.video.preload = 'auto';
+    this.video.preload = 'none'; // no second download: the in-memory copy (filmCache) is attached when ready
+    if (filmReady()) this.video.src = filmSrc();
     this.video.crossOrigin = 'anonymous';
     const vtex = new THREE.VideoTexture(this.video);
     vtex.colorSpace = THREE.SRGBColorSpace;
@@ -210,23 +210,16 @@ export class Flight {
 
   /* ---------------------------------------------------------------- the real window film */
 
-  /** Call inside the START tap: lets mobile browsers play the video later without a gesture. */
+  /** Call on START: attach the in-memory film as soon as it is downloaded (muted inline video needs no gesture). */
   primeVideo() {
     const v = this.video;
     void preloadFilm().then((src) => {
       if (!this.filmOn && v.src !== src) {
         v.src = src;
+        v.preload = 'auto';
         v.load();
       }
     });
-    v.load();
-    void v
-      .play()
-      .then(() => {
-        v.pause();
-        v.currentTime = 0;
-      })
-      .catch(() => {});
   }
 
   private stopFilm() {
@@ -248,6 +241,7 @@ export class Flight {
     if (!this.filmOn) {
       this.filmOn = true;
       if (filmReady() && v.src !== filmSrc()) v.src = filmSrc();
+      else if (!v.getAttribute('src')) v.src = filmSrc(); // not in memory yet: stream it now
       try {
         v.currentTime = target;
       } catch {
