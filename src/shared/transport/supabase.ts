@@ -43,25 +43,63 @@ export class SupabaseTransport implements Transport {
   private seen = new Set<string>();
   private timer: ReturnType<typeof setInterval>;
 
+  private closed = false;
+  private retry = 0;
+  private joinTimer: ReturnType<typeof setTimeout> | null = null;
+
   constructor(readonly code: string) {
-    this.ch = this.client.channel(`astrovr:${code}`, { config: { broadcast: { self: false, ack: false } } });
+    this.ch = this.connect();
+    this.timer = setInterval(() => this.flushOutbox(false), 400);
+  }
+
+  /** Join the room channel; if the join stalls (slow venue Wi-Fi / far region) or drops, build a fresh channel. */
+  private connect(): RealtimeChannel {
+    const ch = this.client.channel(`astrovr:${this.code}`, { config: { broadcast: { self: false, ack: false } } });
     for (const ev of ['hello', 'meta', 'state', 'pose', 'action', 'radio', 'ack'] as EventName[]) {
-      this.ch.on('broadcast', { event: ev }, ({ payload }) => this.dispatch(ev, payload));
+      ch.on('broadcast', { event: ev }, ({ payload }) => this.dispatch(ev, payload));
     }
-    this.ch.subscribe((status) => {
+    this.armJoinWatchdog(ch);
+    ch.subscribe((status) => {
+      if (ch !== this.ch || this.closed) return;
       const ok = status === 'SUBSCRIBED';
-      if (ok !== this.connected) {
-        this.connected = ok;
-        this.connListeners.forEach((l) => l(ok));
-      }
+      this.setConnected(ok);
       if (ok) {
+        this.retry = 0;
+        if (this.joinTimer) clearTimeout(this.joinTimer);
         this.raw('hello', {});
         for (const [ev, v] of this.pendingLatest) this.raw(ev, v);
         this.pendingLatest.clear();
         this.flushOutbox(true);
+      } else if (status === 'TIMED_OUT' || status === 'CHANNEL_ERROR' || status === 'CLOSED') {
+        this.reconnect();
       }
     });
-    this.timer = setInterval(() => this.flushOutbox(false), 400);
+    return ch;
+  }
+
+  private armJoinWatchdog(ch: RealtimeChannel) {
+    if (this.joinTimer) clearTimeout(this.joinTimer);
+    this.joinTimer = setTimeout(() => {
+      if (ch === this.ch && !this.connected && !this.closed) this.reconnect();
+    }, 8000);
+  }
+
+  private reconnect() {
+    if (this.closed) return;
+    this.setConnected(false);
+    const old = this.ch;
+    const delay = Math.min(5000, 800 * 2 ** this.retry++);
+    setTimeout(() => {
+      if (this.closed) return;
+      void this.client.removeChannel(old);
+      this.ch = this.connect();
+    }, delay);
+  }
+
+  private setConnected(ok: boolean) {
+    if (ok === this.connected) return;
+    this.connected = ok;
+    this.connListeners.forEach((l) => l(ok));
   }
 
   private dispatch(ev: EventName, payload: unknown) {
@@ -168,6 +206,8 @@ export class SupabaseTransport implements Transport {
     this.outbox.clear();
   }
   close() {
+    this.closed = true;
+    if (this.joinTimer) clearTimeout(this.joinTimer);
     clearInterval(this.timer);
     this.handlers.clear();
     this.connListeners.clear();
