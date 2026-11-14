@@ -1,0 +1,15 @@
+{
+ "source": "LOLA-derived average visibility maps (Mazarico et al. 2011), NASA PGDA / MIT imbrium",
+ "urls": [
+  "http://imbrium.mit.edu/EXTRAS/ILLUMINATION/IMG/AVGVISIB_85S_060M_201608.IMG",
+  "http://imbrium.mit.edu/EXTRAS/ILLUMINATION/IMG/AVGVISIB_85S_060M_201608_EARTH.IMG"
+ ],
+ "fetchedAt": "2026-11-14T10:19:18.754Z",
+ "site": {
+  "name": "Nobile Rim 1 (sunniest point)",
+  "lat": -85.3003,
+  "lon": 37.0989
+ },
+ "sunlitPercent": 73.5,
+ "earthVisiblePercent": 60.1
+}

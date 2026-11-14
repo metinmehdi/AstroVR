@@ -1,9 +1,9 @@
 {
- "generatedAt": "2026-11-14T09:40:23.186Z",
+ "generatedAt": "2026-11-14T10:22:59.936Z",
  "site": {
-  "name": "Nobile Rim 1",
-  "lat": -85.4,
-  "lon": 37
+  "name": "Nobile Rim 1 (sunniest point)",
+  "lat": -85.3003,
+  "lon": 37.0989
  },
  "datasets": [
   {
@@ -22,17 +22,10 @@
   },
   {
    "id": "horizons-site",
-   "name": "Sun and Earth azimuth/elevation from Nobile Rim 1, next 30 days",
+   "name": "Sun and Earth azimuth/elevation from Nobile Rim 1 (sunniest point), next 30 days",
    "org": "NASA JPL",
    "url": "https://ssd.jpl.nasa.gov/horizons/",
    "usedFor": "Real low-Sun lighting and Earth position in the sky; when the Sun drops behind the ridge"
-  },
-  {
-   "id": "epic",
-   "name": "EPIC full-disk Earth photo, 2026-11-11 00:13:03",
-   "org": "NASA GSFC / NOAA DSCOVR",
-   "url": "https://epic.gsfc.nasa.gov/",
-   "usedFor": "The Earth you see in the lunar sky is a real photo of Earth"
   },
   {
    "id": "nasa-images",
@@ -42,11 +35,74 @@
    "usedFor": "Science card shown after collecting a sample"
   },
   {
-   "id": "donki-recent",
-   "name": "DONKI space-weather notifications, last 14 days",
-   "org": "NASA CCMC",
-   "url": "https://ccmc.gsfc.nasa.gov/tools/DONKI/",
-   "usedFor": "\"Today's real Sun\" panel (live API, this file is the offline cache)"
+   "id": "illumination",
+   "name": "Average sunlight 73.5% and Earth visibility 60.1% at the site",
+   "org": "NASA GSFC PGDA (LRO LOLA)",
+   "url": "https://pgda.gsfc.nasa.gov/products/69",
+   "usedFor": "Why this site was chosen: power from the Sun and radio contact with Earth"
+  },
+  {
+   "id": "iss-tepc",
+   "name": "ISS daily dose (TEPC, 2018-03-01): 419 µGy/day",
+   "org": "NASA JSC SRAG · NASA SPDF CDAWeb",
+   "url": "https://cdaweb.gsfc.nasa.gov/",
+   "usedFor": "\"Your EVA dose = X days on the Space Station\" comparison"
+  },
+  {
+   "id": "public/textures/starmap.jpg",
+   "name": "Deep Star Maps 2020 (Hipparcos-2, Tycho-2, Gaia DR2)",
+   "org": "NASA Scientific Visualization Studio",
+   "url": "https://svs.gsfc.nasa.gov/4851",
+   "usedFor": "Real star positions in the black lunar sky"
+  },
+  {
+   "id": "public/images/moon-poles.jpg",
+   "name": "CGI Moon Kit: LRO colour map of the poles",
+   "org": "NASA Scientific Visualization Studio",
+   "url": "https://svs.gsfc.nasa.gov/4720",
+   "usedFor": "Mission Control map of the lunar south pole"
+  },
+  {
+   "id": "lola-terrain",
+   "name": "LRO LOLA 5 m terrain, 480 m × 480 m around the site (centre elevation 6762 m)",
+   "org": "NASA GSFC PGDA",
+   "url": "https://pgda.gsfc.nasa.gov/products/78",
+   "usedFor": "The ground you walk on is real Moon terrain measured by laser from orbit"
+  },
+  {
+   "id": "diviner",
+   "name": "LRO Diviner surface temperature at the site: average ~130 K, maximum ~236–263 K; permanently shadowed craters ~25–40 K",
+   "org": "NASA LRO Diviner (PDS Polar Resource Product)",
+   "url": "https://pds-geosciences.wustl.edu/lro/urn-nasa-pds-lro_diviner_derived1/",
+   "usedFor": "Suit temperature: sunlit vs shadow"
+  },
+  {
+   "id": "bvad",
+   "name": "Crew oxygen use 0.895 kg per person per day (NASA BVAD Rev 2, 2022, Table 3-31)",
+   "org": "NASA",
+   "url": "https://ntrs.nasa.gov/citations/20210024855",
+   "usedFor": "Oxygen model"
+  },
+  {
+   "id": "lsc-15415",
+   "name": "Apollo 15 sample 15415 \"Genesis Rock\": ferroan anorthosite, 98% plagioclase, ~4 billion years",
+   "org": "NASA JSC Lunar Sample Compendium",
+   "url": "https://curator.jsc.nasa.gov/lunar/lsc/15415.pdf",
+   "usedFor": "Science card after collecting a sample"
+  },
+  {
+   "id": "artemis1-radiation",
+   "name": "Artemis I radiation measurements: storm shelter ≈ 4× lower dose (Nature 2024)",
+   "org": "NASA / DLR",
+   "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC11446838/",
+   "usedFor": "Shelter protection factor"
+  },
+  {
+   "id": "osd-476",
+   "name": "Plants grown in Apollo lunar regolith show stress responses (OSD-476)",
+   "org": "NASA OSDR",
+   "url": "https://osdr.nasa.gov/bio/repo/data/studies/OSD-476",
+   "usedFor": "Greenhouse stress mechanic"
   }
  ]
 }

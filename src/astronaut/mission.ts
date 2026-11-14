@@ -13,7 +13,7 @@ import { Gaze } from './gaze';
 import { faceCamera, makeButton, WristPanel, type Button3D } from './ui3d';
 
 const EYE = 1.65;
-const LOPE_SPEED = 2.2; // scene m/s
+const LOPE_SPEED = 2.6; // scene m/s
 const HOP_LEN = 1.4;
 const HOP_H = 0.35;
 

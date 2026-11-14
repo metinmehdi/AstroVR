@@ -76,7 +76,7 @@ export const COPY_WINDOW_S = 15; // astronaut must answer "Copy" within this man
 export const SOURCES = {
   commDelay: 'Earth–Moon light time ≈ 1.28 s (384,400 km ÷ speed of light).',
   shelter: 'Artemis I radiation measurements (Nature, 2024): storm shelter ≈ 4× lower dose than crew area (414 → 95 µGy/min, Oct-1989 storm simulation).',
-  shadow: 'NASA lunar radiation modelling (LRO/CRaTER): inside craters solar-storm dose is reduced by ≥40%.',
+  shadow: 'Standing low against terrain blocks part of the sky. NASA lunar radiation modelling (LRO/CRaTER): inside craters solar-storm dose is reduced by ≥40%. The shadow spot is a REAL terrain shadow (LOLA + JPL Horizons).',
   vsat: 'NASA Vertical Solar Array Technology (VSAT): ~10 m masts keep arrays in light at the lunar south pole.',
   greenhouse: 'NASA OSDR OSD-476: plants grown in real Apollo lunar soil showed stress responses.',
   storm: 'NASA DONKI: 11 May 2024 flare (01:10 UTC) → >100 MeV protons (02:10 UTC). Proton intensity: SOHO/EPHIN hourly data (NASA SPDF CDAWeb).',

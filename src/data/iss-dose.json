@@ -1,0 +1,9 @@
+{
+ "source": "ISS TEPC dose analyzer, NASA SPDF CDAWeb (ISS_DOSANL_TEPC)",
+ "url": "https://cdaweb.gsfc.nasa.gov/hapi/data?id=ISS_DOSANL_TEPC&time.min=2018-03-01T00:00:00Z&time.max=2018-03-02T00:00:00Z&parameters=DOSE,DOSE_EQ60&format=csv",
+ "fetchedAt": "2026-11-14T10:19:18.754Z",
+ "day": "2018-03-01",
+ "minutes": 1440,
+ "absorbedMGyPerDay": 0.419,
+ "doseEquivalentMSvPerDay": 0.916
+}

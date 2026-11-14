@@ -32,31 +32,33 @@ export const NOBILE_MAY2024: Scenario = {
   },
   timeline: { sunBlockedAfterEvaS: 50, sepWarningAfterEvaS: 70 },
   distanceScale: 10,
+  // Waypoints in scene metres (x east, z south) on the REAL LOLA terrain. b2 is in REAL terrain shadow at the
+  // mission time (ray-marched from the JPL Horizons Sun direction over the LOLA DEM); everything else is sunlit.
   waypoints: [
     { id: 'airlock', x: 0, z: 0, label: { en: 'Airlock (storm shelter)', az: 'Hava kamerası (sığınacaq)' } },
     { id: 'base', x: 0, z: -4, label: { en: 'Outside the hatch', az: 'Lyukun qarşısı' } },
-    { id: 'a1', x: 8, z: -14, label: { en: 'Sunlit slope', az: 'Günəşli yamac' } },
+    { id: 'a1', x: 10, z: -12, label: { en: 'Sunlit ridge', az: 'Günəşli silsilə' } },
     {
       id: 'siteA',
-      x: 14,
+      x: 20,
       z: -24,
       siteId: 'siteA',
-      label: { en: 'Sample site A: boulder field', az: 'Nümunə A: daş sahəsi' },
+      label: { en: 'Sample A: ridge rocks (sunny)', az: 'Nümunə A: silsilə daşları (günəşli)' },
     },
-    { id: 'b1', x: -9, z: -15, label: { en: 'Crater path', az: 'Krater yolu' } },
+    { id: 'b1', x: -16, z: 8, label: { en: 'Down the slope', az: 'Yamacla aşağı' } },
     {
       id: 'b2',
-      x: -19,
-      z: -27,
+      x: -44,
+      z: 30,
       shadowRefuge: true,
-      label: { en: 'Crater-wall shadow', az: 'Krater divarının kölgəsi' },
+      label: { en: 'Real terrain shadow', az: 'Real relyef kölgəsi' },
     },
     {
       id: 'siteB',
-      x: -27,
-      z: -38,
+      x: -50,
+      z: 24,
       siteId: 'siteB',
-      label: { en: 'Sample site B: crater rim', az: 'Nümunə B: krater kənarı' },
+      label: { en: 'Sample B: shadow edge (colder soil)', az: 'Nümunə B: kölgə kənarı (soyuq torpaq)' },
     },
   ],
   routes: {

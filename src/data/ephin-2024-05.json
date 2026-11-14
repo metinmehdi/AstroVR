@@ -1,7 +1,7 @@
 {
  "source": "SOHO COSTEP-EPHIN L3I 1-hour, NASA SPDF CDAWeb (HAPI)",
  "url": "https://cdaweb.gsfc.nasa.gov/hapi/data?id=SOHO_COSTEP-EPHIN_L3I-1HR&parameters=P_int&time.min=2024-05-10T00:00Z&time.max=2024-05-14T00:00Z&format=csv",
- "fetchedAt": "2026-11-14T09:40:23.186Z",
+ "fetchedAt": "2026-11-14T10:19:18.754Z",
  "units": "(cm^2 s sr MeV)^-1",
  "channels": [
   "4.3-7.8 MeV",
