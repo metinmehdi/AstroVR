@@ -8,6 +8,10 @@ import { HelmetCam } from './HelmetCam';
 import { tr } from './strings';
 
 const FALLBACK_AFTER_MS = 8000;
+/** no new video frame for this long → the phone stopped streaming (locked screen, app in background) */
+const STALL_MS = 4000;
+/** the 8 s wait counts from the first mount, so switching operator ↔ broadcast does not restart it */
+let firstMount = 0;
 
 /** true while the stream has a live, unmuted video track */
 function useStreamLive(stream: MediaStream | null) {
@@ -32,7 +36,7 @@ function useStreamLive(stream: MediaStream | null) {
   return live;
 }
 
-function LeftEyeVideo({ stream, backdrop }: { stream: MediaStream; backdrop: boolean }) {
+function LeftEyeVideo({ stream, backdrop, onFrames }: { stream: MediaStream; backdrop: boolean; onFrames: (alive: boolean) => void }) {
   const box = useRef<HTMLDivElement>(null);
   const vid = useRef<HTMLVideoElement>(null);
   const bg = useRef<HTMLVideoElement>(null);
@@ -45,6 +49,39 @@ function LeftEyeVideo({ stream, backdrop }: { stream: MediaStream; backdrop: boo
       void v.play().catch(() => {});
     }
   }, [stream, backdrop]);
+
+  // frame watchdog: a muted/ended track is not the only way a mirror dies
+  useEffect(() => {
+    const v = vid.current!;
+    let last = performance.now();
+    let lastTime = -1;
+    let alive = true;
+    let handle = 0;
+    const rvfc = (v as HTMLVideoElement & { requestVideoFrameCallback?: (cb: () => void) => number }).requestVideoFrameCallback;
+    const onFrame = () => {
+      last = performance.now();
+      handle = rvfc!.call(v, onFrame);
+    };
+    if (rvfc) handle = rvfc.call(v, onFrame);
+    const id = setInterval(() => {
+      if (!rvfc && v.currentTime !== lastTime) {
+        lastTime = v.currentTime;
+        last = performance.now();
+      }
+      const now = performance.now() - last < STALL_MS;
+      if (now !== alive) {
+        alive = now;
+        onFrames(now);
+      }
+    }, 1000);
+    return () => {
+      clearInterval(id);
+      const cancel = (v as HTMLVideoElement & { cancelVideoFrameCallback?: (h: number) => void }).cancelVideoFrameCallback;
+      if (handle && cancel) cancel.call(v, handle);
+      onFrames(true);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stream]);
 
   useLayoutEffect(() => {
     const el = box.current!;
@@ -96,16 +133,22 @@ export function MirrorView({
   children?: ReactNode;
 }) {
   const live = useStreamLive(stream);
-  const [waited, setWaited] = useState(false);
+  const [frames, setFrames] = useState(true);
+  if (!firstMount) firstMount = performance.now();
+  const [waited, setWaited] = useState(() => performance.now() - firstMount >= FALLBACK_AFTER_MS);
   useEffect(() => {
-    const id = setTimeout(() => setWaited(true), FALLBACK_AFTER_MS);
+    if (waited) return;
+    const id = setTimeout(() => setWaited(true), Math.max(0, FALLBACK_AFTER_MS - (performance.now() - firstMount)));
     return () => clearTimeout(id);
-  }, []);
+  }, [waited]);
 
-  const showVideo = Boolean(stream) && live;
+  const hasVideo = Boolean(stream) && live;
+  const showVideo = hasVideo && frames;
   return (
     <div className={`mirror ${broadcast ? 'mirror-bc' : ''}`}>
-      {showVideo ? <LeftEyeVideo stream={stream!} backdrop={broadcast} /> : <HelmetCam poseRef={poseRef} state={state} />}
+      {/* the video stays mounted while stalled (covered by the 3D view) so recovery is detected */}
+      {hasVideo && <LeftEyeVideo stream={stream!} backdrop onFrames={setFrames} />}
+      {!showVideo && <HelmetCam poseRef={poseRef} state={state} />}
       <div className="mirror-badges">
         {showVideo ? (
           <span className="badge live">

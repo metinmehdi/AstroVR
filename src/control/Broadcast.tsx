@@ -43,8 +43,9 @@ export function ProtonChart({ s, lang }: { s: SimState; lang: Lang }) {
         <span className="real-tag">{tr(lang, 'bc.realData')}</span>
         <span className="chart-title">{tr(lang, 'bc.protons')}</span>
         <span className="spacer" />
-        <span className="chart-factor">
+        <span className="chart-factor" title={tr(lang, 'bc.factor')}>
           ×{factor >= 10 ? Math.round(factor) : factor.toFixed(1)}
+          <small>{tr(lang, 'bc.factor')}</small>
         </span>
       </div>
       <svg viewBox={`0 0 ${W} ${Hh}`} className="chart-svg" role="img" aria-label={tr(lang, 'bc.protons')}>

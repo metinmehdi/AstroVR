@@ -101,11 +101,10 @@ export function Debrief({
             <circle cx="60" cy="66" r="24" fill="#d9dde3" />
             <circle cx="52" cy="60" r="5" fill="#aab1bb" />
             <circle cx="68" cy="74" r="3.5" fill="#aab1bb" />
-            <path d="M24 46 Q60 18 96 46" fill="none" stroke="#FF7A1A" strokeWidth="2.5" />
-            <text x="60" y="34" textAnchor="middle" fill="#eaf1fb" fontSize="11" fontWeight="800" letterSpacing="2">
+            <text x="60" y="33" textAnchor="middle" fill="#eaf1fb" fontSize="11" fontWeight="800" letterSpacing="2">
               ASTROVR
             </text>
-            <text x="60" y="106" textAnchor="middle" fill="#8a9bb2" fontSize="8" letterSpacing="1.5">
+            <text x="60" y="101" textAnchor="middle" fill="#8a9bb2" fontSize="7" letterSpacing="1">
               NOBILE RIM 1
             </text>
           </svg>

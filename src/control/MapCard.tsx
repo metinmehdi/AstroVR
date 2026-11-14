@@ -111,7 +111,8 @@ export function MapCard({ s, lang }: { s: SimState; lang: Lang }) {
     const canvas = cv.current!;
     const ctx = canvas.getContext('2d')!;
     const img = buildRaster();
-    const pos = { x: WP.airlock.x, z: WP.airlock.z };
+    const start = WP[latest.current.astronaut.waypointId] ?? WP.airlock; // remount (view switch) → no glide from base
+    const pos = { x: start.x, z: start.z };
     let raf = 0;
     let w = 0;
     let h = 0;
@@ -271,11 +272,12 @@ export function MapCard({ s, lang }: { s: SimState; lang: Lang }) {
         ctx.stroke();
       }
       ctx.restore();
-      const sunTxt = `${tr(L, 'map.sun')} ${MISSION_SKY.sun.elevationDeg.toFixed(1)}°`;
+      const sunBase = `${tr(L, 'map.sun')} ${MISSION_SKY.sun.elevationDeg.toFixed(1)}°`;
+      const sunTxt = blocked ? `${sunBase} · ${L === 'az' ? 'örtülü' : 'blocked'}` : sunBase;
       ctx.font = '700 12px "Segoe UI", system-ui, sans-serif';
       const tw = ctx.measureText(sunTxt).width;
       const right = sx + 20 + tw < w - 4;
-      label(ctx, blocked ? `${sunTxt} · ${L === 'az' ? 'örtülü' : 'blocked'}` : sunTxt, right ? sx + 20 : sx - 20, sy, blocked ? '#8a9bb2' : '#ffd88a', right ? 'left' : 'right');
+      label(ctx, sunTxt, right ? sx + 20 : sx - 20, sy, blocked ? '#8a9bb2' : '#ffd88a', right ? 'left' : 'right');
 
       // north arrow
       ctx.fillStyle = '#eaf1fb';

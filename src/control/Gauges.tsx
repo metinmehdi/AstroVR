@@ -47,10 +47,8 @@ export function Gauges({ s, lang, compact = false }: { s: SimState; lang: Lang; 
         {!compact && (
           <div className="gauge-sub">
             <span>
-              ☀ {tr(lang, 'g.in')} <b>{s.power.solarInKW.toFixed(1)}</b> kW
-            </span>
-            <span>
-              {tr(lang, 'g.out')} <b>{s.power.loadKW.toFixed(1)}</b> kW <span className={net >= 0 ? 'up' : 'down'}>{net >= 0 ? '▲' : '▼'}</span>
+              ☀ <b>{s.power.solarInKW.toFixed(1)}</b> {tr(lang, 'g.in')} · <b>{s.power.loadKW.toFixed(1)}</b> {tr(lang, 'g.out')} kW{' '}
+              <span className={net >= 0 ? 'up' : 'down'}>{net >= 0 ? '▲' : '▼'}</span>
             </span>
           </div>
         )}
@@ -82,10 +80,7 @@ export function Gauges({ s, lang, compact = false }: { s: SimState; lang: Lang; 
         {!compact && (
           <div className="gauge-sub">
             <span>
-              {tr(lang, 'g.rule', { v: MISSION_DOSE_BUDGET_MGY })} · <b>{Math.round(s.dose.budgetPct)}%</b>
-            </span>
-            <span>
-              <b>{s.dose.rateMGyPerH.toFixed(2)}</b> {tr(lang, 'g.rate')}
+              <b>{s.dose.rateMGyPerH.toFixed(2)}</b> {tr(lang, 'g.rate')} · {tr(lang, 'g.rule', { v: MISSION_DOSE_BUDGET_MGY })}
             </span>
           </div>
         )}

@@ -120,7 +120,7 @@ export function Systems({ s, lang, cmd }: { s: SimState; lang: Lang; cmd: (c: Co
           name={t(lang, 'sw.vsat')}
           status={tr(lang, v === 'down' ? 'sys.down' : v === 'raising' ? 'sys.raising' : 'sys.up')}
           on={v !== 'down'}
-          kw={v === 'raising' ? `−${K.VSAT_MOTOR_KW} kW` : v === 'up' ? `+${K.SOLAR_VSAT_UP_KW} kW` : `${K.VSAT_MOTOR_KW} kW · ${K.VSAT_RAISE_S} min`}
+          kw={v === 'raising' ? `−${K.VSAT_MOTOR_KW} kW` : v === 'up' ? `+${K.SOLAR_VSAT_UP_KW} kW` : `${K.VSAT_MOTOR_KW} kW`}
           trade={tr(lang, v === 'up' ? 'sys.vsat.tradeUp' : 'sys.vsat.trade')}
           control={
             v === 'down' ? (

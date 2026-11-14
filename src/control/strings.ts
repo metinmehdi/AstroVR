@@ -107,6 +107,7 @@ const en = {
   'bc.protons': 'Penetrating protons 25–53 MeV',
   'bc.chartSrc': 'SOHO/EPHIN · NASA CDAWeb · 11 May 2024 (replayed 4×)',
   'bc.now': 'now',
+  'bc.factor': 'vs. before the flare',
   'bc.utc': 'UTC, 11 May 2024',
 
   'banner.sunBlocked': 'Sun behind the ridge',
@@ -141,7 +142,7 @@ const en = {
   'quiz.before': 'before',
   'quiz.after': 'after',
   'quiz.noPre': 'Pre-flight quiz was skipped, so this session is not counted in the pilot.',
-  'quiz.pilot': 'Pilot: {n} sessions, {x}% → {y}% correct',
+  'quiz.pilot': 'Pilot: {n} {sessions}, {x}% → {y}% correct',
   'quiz.pilotNone': 'Pilot: no complete sessions yet',
   'quiz.done': 'Quiz complete',
 
@@ -152,7 +153,7 @@ const en = {
   'debrief.sample': 'Your sample is like',
   'debrief.retry': 'Try again',
   'debrief.notes': 'What happened and why',
-  'debrief.great': 'Flawless mission — every procedure followed!',
+  'debrief.great': 'No mistakes: every procedure was followed.',
 
   'sun.title': 'Today’s real Sun',
   'sun.live': 'LIVE · NASA DONKI',
@@ -272,6 +273,7 @@ const az: Record<SKey, string> = {
   'bc.protons': 'Nüfuzedici protonlar 25–53 MeV',
   'bc.chartSrc': 'SOHO/EPHIN · NASA CDAWeb · 11 may 2024 (4× sürətlə)',
   'bc.now': 'indi',
+  'bc.factor': 'alovdan əvvəlki ilə',
   'bc.utc': 'UTC, 11 may 2024',
 
   'banner.sunBlocked': 'Günəş silsilənin arxasındadır',
@@ -306,7 +308,7 @@ const az: Record<SKey, string> = {
   'quiz.before': 'əvvəl',
   'quiz.after': 'sonra',
   'quiz.noPre': 'Uçuşdan əvvəlki test keçildi, ona görə bu sessiya pilota daxil edilmir.',
-  'quiz.pilot': 'Pilot: {n} sessiya, {x}% → {y}% düzgün',
+  'quiz.pilot': 'Pilot: {n} {sessions}, {x}% → {y}% düzgün',
   'quiz.pilotNone': 'Pilot: hələ tam sessiya yoxdur',
   'quiz.done': 'Test tamamlandı',
 
@@ -317,7 +319,7 @@ const az: Record<SKey, string> = {
   'debrief.sample': 'Sənin nümunənə bənzəyir',
   'debrief.retry': 'Yenidən sına',
   'debrief.notes': 'Nə oldu və niyə',
-  'debrief.great': 'Qüsursuz missiya — bütün qaydalara əməl olundu!',
+  'debrief.great': 'Səhv yoxdur: bütün qaydalara əməl olundu.',
 
   'sun.title': 'Bugünkü real Günəş',
   'sun.live': 'CANLI · NASA DONKI',

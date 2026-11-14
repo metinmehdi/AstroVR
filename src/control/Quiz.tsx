@@ -101,6 +101,7 @@ export function pilotLine(lang: Lang, s: QuizStats): string {
   if (!s.sessions || !s.questions) return tr(lang, 'quiz.pilotNone');
   return tr(lang, 'quiz.pilot', {
     n: s.sessions,
+    sessions: lang === 'az' ? 'sessiya' : s.sessions === 1 ? 'session' : 'sessions',
     x: Math.round((100 * s.preCorrect) / s.questions),
     y: Math.round((100 * s.postCorrect) / s.questions),
   });

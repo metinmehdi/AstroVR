@@ -25,6 +25,9 @@ export function HelmetCam({ poseRef, state }: { poseRef: { current: AstronautPos
     lamp.target.position.set(0, -0.6, -4);
     camera.add(lamp, lamp.target);
     moon.scene.add(camera);
+    // fallback view only: a soft fill light so the projector picture stays readable in deep polar shadow
+    const fill = new THREE.HemisphereLight(0xc8d8ff, 0x2a241c, 0.45);
+    moon.scene.add(fill);
     const target = new THREE.Vector3();
     const resize = () => {
       const w = Math.max(1, el.clientWidth);
@@ -55,6 +58,7 @@ export function HelmetCam({ poseRef, state }: { poseRef: { current: AstronautPos
       renderer.setAnimationLoop(null);
       renderer.dispose();
       moon.dispose();
+      moon.scene.remove(fill);
       el.removeChild(renderer.domElement);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
