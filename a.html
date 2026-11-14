@@ -23,6 +23,7 @@
         font: 800 32px system-ui, sans-serif; letter-spacing: 0.08em; color: #000; background: #ffc847;
         border: 0; border-radius: 999px; padding: 22px 64px;
       }
+      #start:disabled { background: #444; color: #aaa; }
       #banner {
         position: fixed; top: 8px; left: 50%; transform: translateX(-50%); z-index: 3;
         background: #b3261e; color: #fff; padding: 6px 14px; border-radius: 8px; font: 600 14px system-ui, sans-serif;
@@ -32,7 +33,7 @@
   <body>
     <div id="overlay">
       <p id="info"></p>
-      <button id="start"></button>
+      <button id="start" disabled>…</button>
     </div>
     <div id="banner" hidden></div>
     <script type="module" src="/src/astronaut/main.ts"></script>

@@ -27,8 +27,10 @@ const banner = document.getElementById('banner') as HTMLDivElement;
 let lang: Lang = 'en';
 let state: SimState | null = null;
 
+let loaded = false;
 function applyLang() {
-  startBtn.textContent = t(lang, 'astro.start');
+  // START stays disabled until the transport, scene and handlers are ready (early taps were silently lost)
+  startBtn.textContent = loaded ? t(lang, 'astro.start') : '…';
   info.textContent = t(lang, 'astro.instructions');
   banner.textContent = t(lang, 'astro.signalLost');
 }
@@ -124,6 +126,9 @@ async function main() {
     setTimeout(() => head.recenter(), 1500); // time to slide the phone into the box
     transport.sendAction({ kind: 'ready' });
   };
+  loaded = true;
+  startBtn.disabled = false;
+  applyLang();
 
   setInterval(() => {
     const q = camera.quaternion;
