@@ -37,6 +37,7 @@ export function startClockClient(transport: Transport): () => void {
     samples.push({ rtt, off: m.tl + rtt / 2 - t1, at: t1 });
     // keep the last 2 minutes; the best (smallest round trip) of the newest 20 wins
     while (samples.length > 40 || (samples.length && t1 - samples[0].at > 120_000)) samples.shift();
+    if (samples.length < 3) return; // one sample can be far off (a slow first round trip)
     const best = samples.slice(-20).reduce((a, b) => (b.rtt < a.rtt ? b : a));
     offset = best.off;
     synced = true;

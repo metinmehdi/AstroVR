@@ -2286,3 +2286,15 @@ input:focus {
   top: auto;
   bottom: 12px;
 }
+
+/* the headset twin (rendered on this laptop) fills the mirror box */
+.twin-host {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+.twin-host > canvas {
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
+}

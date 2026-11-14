@@ -29,7 +29,7 @@ import { Header } from './Header';
 import { Icon } from './icons';
 import { Lobby } from './Lobby';
 import { MapCard } from './MapCard';
-import { MirrorView } from './MirrorView';
+import { MirrorView, VIDEO_MIRROR } from './MirrorView';
 import { NasaDataPanel } from './NasaDataPanel';
 import { NowCard, Radio, Systems, type LastRadio } from './Panels';
 import { loadStats, recordSession, type QuizStats } from './Quiz';
@@ -109,7 +109,7 @@ export function App() {
         applyAction(sim.current, env.action, SCENARIO);
       });
       void transport.setMeta(meta());
-      stopMirror = startMirrorReceiver(transport, setStream);
+      if (VIDEO_MIRROR) stopMirror = startMirrorReceiver(transport, setStream);
     });
     return () => {
       alive = false;

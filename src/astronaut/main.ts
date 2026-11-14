@@ -258,7 +258,7 @@ async function main() {
     setTimeout(() => head.recenter(), 1500); // time to slide the phone into the box
     transport.sendAction({ kind: 'ready' });
     // live mirror: Mission Control sees exactly this canvas (UI, visor, everything)
-    startMirrorSender(transport, mirrorTap.stream);
+    if (params.get('mirror') === 'video') startMirrorSender(transport, mirrorTap.stream);
     started = true; // the capsule / flight / descent follow the mission state (syncFlight)
   };
   loaded = true;
@@ -292,7 +292,7 @@ async function main() {
     mission.update(dt);
     stereo.render(flight.active ? flight.scene : moon.scene, camera);
     // the projector renders the flight itself (TwinFlight) → no video copy needed then (saves the phone's GPU)
-    if (!flight.active) mirrorTap.capture(renderer.domElement, stereo.enabled, now);
+    if (!flight.active && params.get('mirror') === 'video') mirrorTap.capture(renderer.domElement, stereo.enabled, now);
     // adapt the resolution to the phone: sharp when it can, smooth always
     frames++;
     frameMs += dt * 1000;

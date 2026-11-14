@@ -81,6 +81,7 @@ export function FlightFilm({
   const met = t - plan.liftoff;
   const clock = `${met < 0 ? 'T-' : 'T+'}${String(Math.floor(Math.abs(met) / 60)).padStart(2, '0')}:${String(Math.floor(Math.abs(met) % 60)).padStart(2, '0')}`;
 
+  if (t > plan.total + 0.3) return null; // the flight is over: the descent shows in the normal (twin) view
   if (hidden) {
     return (
       <button className="ff-show" onClick={() => setHidden(false)}>

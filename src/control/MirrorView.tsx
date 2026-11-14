@@ -1,10 +1,25 @@
 /**
- * Live mirror of the astronaut's phone (WebRTC, see shared/rtc.ts). The phone sends ONE eye of its side-by-side stereo
- * view (MirrorTap), so the whole frame is shown. No stream within 8 s, or the stream drops → the locally rendered 3D helmet cam takes over.
+ * What the astronaut sees, for the projector. Default: a TWIN of the headset rendered here (twinWorld.ts — same scene,
+ * same mission UI, the cadet's head direction): sharp and freeze-free. With ?mirror=video: the old WebRTC video of the
+ * phone (shared/rtc.ts), falling back to the local helmet cam when the stream stalls.
  */
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import type { AstronautPose, Lang, SimState } from '../shared/types';
 import { HelmetCam } from './HelmetCam';
+import { attachTwin } from './twinWorld';
+
+export const VIDEO_MIRROR = new URLSearchParams(location.search).get('mirror') === 'video';
+
+/** the headset's view rendered on this laptop */
+function TwinView({ state, poseRef, lang }: { state: SimState; poseRef: { current: AstronautPose | null }; lang: Lang }) {
+  const el = useRef<HTMLDivElement>(null);
+  const s = useRef(state);
+  s.current = state;
+  const l = useRef(lang);
+  l.current = lang;
+  useEffect(() => attachTwin(el.current!, { getState: () => s.current, poseRef, getLang: () => l.current }), [poseRef]);
+  return <div ref={el} className="twin-host" />;
+}
 import { tr } from './strings';
 
 const FALLBACK_AFTER_MS = 8000;
@@ -144,6 +159,19 @@ export function MirrorView({
 
   const hasVideo = Boolean(stream) && live;
   const showVideo = hasVideo && frames;
+  if (!VIDEO_MIRROR) {
+    return (
+      <div className={`mirror ${broadcast ? 'mirror-bc' : ''}`}>
+        <TwinView state={state} poseRef={poseRef} lang={lang} />
+        <div className="mirror-badges">
+          <span className="badge live">
+            <i className="dot" /> {tr(lang, 'mirror.live')}
+          </span>
+        </div>
+        {children}
+      </div>
+    );
+  }
   return (
     <div className={`mirror ${broadcast ? 'mirror-bc' : ''}`}>
       {/* the video stays mounted while stalled (covered by the 3D view) so recovery is detected */}
