@@ -37,11 +37,10 @@ export function Header({
   const name = cadetName.trim() || tr(lang, 'mc.phone');
   return (
     <header className={`hdr ${overlay ? 'hdr-bc' : ''}`}>
+      <img className="hdr-logo" src="/images/astrovr-wordmark.png" alt="AstroVR" width={568} height={191} />
       <div className="hdr-title">
         <h1>{tr(lang, 'mc.console')}</h1>
         <nav className="crumbs" aria-label="Breadcrumb">
-          <span>AstroVR</span>
-          <span className="crumb-sep">/</span>
           <span>{tr(lang, 'mc.site').split(' · ')[0]}</span>
           <span className="crumb-sep">/</span>
           <b>{t(lang, `phase.${s.phase}` as 'phase.lobby')}</b>

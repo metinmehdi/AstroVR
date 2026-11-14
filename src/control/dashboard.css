@@ -97,25 +97,22 @@ h3,
   border-right: 1px solid var(--line);
   z-index: 30;
 }
-.rail-logo {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.3rem;
-  margin-bottom: 0.9rem;
+.rail {
+  padding-top: calc(var(--hdr) + 0.6rem);
 }
-.rail-logo img {
-  width: 2.5rem;
-  height: auto;
+.hdr-logo {
+  height: 2.9rem;
+  width: auto;
+  flex: none;
   display: block;
-  filter: drop-shadow(0 4px 14px rgba(99, 102, 241, 0.45));
+  filter: drop-shadow(0 4px 16px rgba(129, 140, 248, 0.35));
+  padding-right: var(--s5);
+  border-right: 1px solid var(--line-2);
+  box-sizing: content-box;
 }
-.rail-word {
-  font-family: var(--head-font);
-  font-size: 0.62rem;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  color: #dbe4f3;
+.is-bc .hdr-logo {
+  height: 2.4rem;
+  border-right: 0;
 }
 .rail-btn {
   width: 2.75rem;
