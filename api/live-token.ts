@@ -22,7 +22,7 @@ export type RadioLang = 'az' | 'en';
 const MINT_URL = 'https://generativelanguage.googleapis.com/v1beta/auth_tokens';
 const DEFAULT_MODEL = 'gemini-3.8-live';
 /** Native-audio models take every TTS voice; picked by ear (scripts/live-smoke.mjs). */
-const DEFAULT_VOICE = 'Achird';
+const DEFAULT_VOICE = 'Charon';
 const NEW_SESSION_MS = 30 * 60 * 1000;
 const EXPIRE_MS = NEW_SESSION_MS + 15 * 60 * 1000;
 const MINT_TIMEOUT_MS = 6000;
