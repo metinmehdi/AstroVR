@@ -1,4 +1,4 @@
-# SPACE CADET VR — My First Moon Mission
+# AstroVR — My First Moon Mission
 
 **NASA Space Apps Challenge 2026 · Ganja, Azerbaijan · Challenge: _Build a Junior Astronaut Mission Trainer_ · Team UNECom**
 

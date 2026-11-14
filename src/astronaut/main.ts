@@ -53,7 +53,7 @@ async function main() {
   // CAPCOM messages arrive after the real Earth–Moon light delay. Audio (P5) listens for this event.
   transport.onRadio((msg: RadioMessage) => {
     if (msg.lost) return;
-    setTimeout(() => window.dispatchEvent(new CustomEvent<RadioMessage>('scvr:radio', { detail: msg })), COMM_DELAY_MS);
+    setTimeout(() => window.dispatchEvent(new CustomEvent<RadioMessage>('astrovr:radio', { detail: msg })), COMM_DELAY_MS);
   });
 
   // ---- three.js
@@ -102,7 +102,7 @@ async function main() {
     } catch {
       /* optional */
     }
-    window.dispatchEvent(new Event('scvr:audio-unlock')); // P5: resume AudioContext here
+    window.dispatchEvent(new Event('astrovr:audio-unlock')); // P5: resume AudioContext here
     overlay.hidden = true;
     setTimeout(() => head.recenter(), 1500); // time to slide the phone into the box
     transport.sendAction({ kind: 'ready' });

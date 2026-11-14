@@ -31,7 +31,7 @@ export class SupabaseTransport implements Transport {
   private seen = new Set<string>();
 
   constructor(readonly code: string) {
-    this.ch = supabase().channel(`scvr:${code}`, { config: { broadcast: { self: false, ack: false } } });
+    this.ch = supabase().channel(`astrovr:${code}`, { config: { broadcast: { self: false, ack: false } } });
     for (const ev of ['hello', 'meta', 'state', 'pose', 'action', 'radio'] as EventName[]) {
       this.ch.on('broadcast', { event: ev }, ({ payload }) => this.dispatch(ev, payload));
     }

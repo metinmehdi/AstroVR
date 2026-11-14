@@ -23,7 +23,7 @@ export class LocalTransport implements Transport {
   private seen = new Set<string>();
 
   constructor(readonly code: string) {
-    this.ch = new BroadcastChannel(`scvr-${code}`);
+    this.ch = new BroadcastChannel(`astrovr-${code}`);
     this.ch.onmessage = (e: MessageEvent<Packet>) => this.dispatch(e.data);
     this.ch.postMessage({ t: 'hello' } satisfies Packet);
   }

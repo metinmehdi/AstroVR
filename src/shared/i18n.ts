@@ -2,7 +2,7 @@
 import type { Lang } from './types';
 
 const en = {
-  'app.title': 'SPACE CADET VR — My First Moon Mission',
+  'app.title': 'AstroVR — My First Moon Mission',
   'astro.start': 'START',
   'astro.instructions': 'Turn the phone sideways, press START, then put it in the VR box.',
   'astro.noRoom': 'Scan the QR code on the Mission Control screen.',
@@ -38,7 +38,7 @@ const en = {
 export type I18nKey = keyof typeof en;
 
 const az: Record<I18nKey, string> = {
-  'app.title': 'SPACE CADET VR — İlk Ay Missiyam',
+  'app.title': 'AstroVR — İlk Ay Missiyam',
   'astro.start': 'BAŞLA',
   'astro.instructions': 'Telefonu yan çevir, BAŞLA düyməsinə bas, sonra VR box-a qoy.',
   'astro.noRoom': 'Missiya İdarəsi ekranındakı QR kodu oxut.',

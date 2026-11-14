@@ -1,9 +1,9 @@
 {
-  "name": "space-cadet-vr",
+  "name": "astrovr",
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "SPACE CADET VR — My First Moon Mission. NASA Space Apps 2026 (Ganja) · Build a Junior Astronaut Mission Trainer",
+  "description": "AstroVR — My First Moon Mission. NASA Space Apps 2026 (Ganja) · Build a Junior Astronaut Mission Trainer",
   "scripts": {
     "dev": "vite --host",
     "dev:https": "vite --host --mode https",
