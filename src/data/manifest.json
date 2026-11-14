@@ -1,5 +1,5 @@
 {
- "generatedAt": "2026-11-14T10:38:00.878Z",
+ "generatedAt": "2026-11-14T13:58:01.445Z",
  "site": {
   "name": "Nobile Rim 1 (sunniest point)",
   "lat": -85.3003,
@@ -19,13 +19,6 @@
    "org": "ESA/NASA SOHO · NASA SPDF CDAWeb",
    "url": "https://cdaweb.gsfc.nasa.gov/",
    "usedFor": "Radiation dose rate during the storm (real measured proton intensity curve)"
-  },
-  {
-   "id": "horizons-site",
-   "name": "Sun and Earth azimuth/elevation from Nobile Rim 1 (sunniest point), next 30 days",
-   "org": "NASA JPL",
-   "url": "https://ssd.jpl.nasa.gov/horizons/",
-   "usedFor": "Real low-Sun lighting and Earth position in the sky; when the Sun drops behind the ridge"
   },
   {
    "id": "nasa-images",
@@ -84,6 +77,20 @@
    "usedFor": "\"Today's real Sun\" panel (live API, this file is the offline cache)"
   },
   {
+   "id": "horizons-site",
+   "name": "Sun and Earth azimuth/elevation from Nobile Rim 1 (sunniest point), next 30 days",
+   "org": "NASA JPL",
+   "url": "https://ssd.jpl.nasa.gov/horizons/",
+   "usedFor": "Real low-Sun lighting and Earth position in the sky; when the Sun drops behind the ridge"
+  },
+  {
+   "id": "lola-horizon",
+   "name": "LRO LOLA 80 m polar DEM: the real mountains around the site out to 60 km, with real Sun shadows",
+   "org": "NASA LRO LOLA (PDS Geosciences)",
+   "url": "https://pds-geosciences.wustl.edu/missions/lro/lola.htm",
+   "usedFor": "The horizon you see in VR is the real south-pole landscape; dark areas are in real shadow at the mission time"
+  },
+  {
    "id": "diviner",
    "name": "LRO Diviner surface temperature at the site: average ~130 K, maximum ~236–263 K; permanently shadowed craters ~25–40 K",
    "org": "NASA LRO Diviner (PDS Polar Resource Product)",
@@ -112,18 +119,18 @@
    "usedFor": "Storm-shelter protection factor (from the study's simulation of the Oct 1989 storm)"
   },
   {
-   "id": "osd-476",
-   "name": "Plants grown in Apollo lunar regolith show stress responses (OSD-476)",
-   "org": "NASA OSDR",
-   "url": "https://osdr.nasa.gov/bio/repo/data/studies/OSD-476",
-   "usedFor": "Greenhouse stress mechanic"
-  },
-  {
    "id": "phipps-2021",
    "name": "NASA Geant4 modelling of solar-storm proton dose near lunar craters: ≥40% lower inside craters (Phipps et al., NESF 2021)",
    "org": "NASA",
    "url": "https://ntrs.nasa.gov/citations/20210021039",
    "usedFor": "Terrain-shadow refuge protection factor (×0.6)"
+  },
+  {
+   "id": "osd-476",
+   "name": "Plants grown in Apollo lunar regolith show stress responses (OSD-476)",
+   "org": "NASA OSDR",
+   "url": "https://osdr.nasa.gov/bio/repo/data/studies/OSD-476",
+   "usedFor": "Greenhouse stress mechanic"
   }
  ]
 }

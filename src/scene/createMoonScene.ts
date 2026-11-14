@@ -11,6 +11,7 @@
 import * as THREE from 'three';
 import type { Scenario, SimState } from '../shared/types';
 import { MISSION_SKY } from '../shared/realdata';
+import { createHorizon } from './horizon';
 import terrain from '../data/terrain-nobile.json';
 import { createOutpost } from './outpost';
 
@@ -249,6 +250,8 @@ export function createMoonScene(scenario: Scenario, quality: Quality = 'low'): M
   terrainMesh.receiveShadow = true;
   terrainMesh.castShadow = true;
   scene.add(terrainMesh);
+  // ---- the REAL landscape out to 60 km (LOLA polar DEM) with real Sun shadows: no more floating square of ground
+  scene.add(createHorizon(lolaHeight, TERRAIN_SIZE / 2));
 
   // ---- sky: REAL star map (NASA SVS Deep Star Maps 2020), south ecliptic pole at the zenith
   const starTex = new THREE.TextureLoader().load('/textures/starmap.jpg');

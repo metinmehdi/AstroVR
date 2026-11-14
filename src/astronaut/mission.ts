@@ -11,6 +11,7 @@ import { SuitAudio } from '../audio/engine';
 import { RADIO, SUIT, lineText } from '../audio/lines';
 import { Gaze } from './gaze';
 import { Guide } from './guide';
+import { Effects } from './effects';
 import { currentObjective } from '../shared/objective';
 import { evaClock } from '../shared/protocol';
 import { faceCamera, makeButton, WristPanel, type Button3D } from './ui3d';
@@ -50,11 +51,15 @@ export class AstronautMission {
   private sampleUI = new Map<SiteId, { photo: Button3D; collect: Button3D; mark: Button3D }>();
   private beacons = new Map<string, Button3D>();
   private guide: Guide;
+  private fx: Effects;
+  private hopSide = 1;
+  private intro: { t: number; dur: number; title: THREE.Mesh } | null = null;
   private wristAcc = 0;
 
   constructor(private c: Ctx) {
     this.gaze = new Gaze(c.camera);
     this.guide = new Guide(c.scene, c.camera, (x, z) => c.terrainHeight(x, z));
+    this.fx = new Effects(c.scene, c.camera, (x, z) => c.terrainHeight(x, z));
     window.addEventListener('astrovr:step', () => this.audio.chime());
     this.wrist = new WristPanel(c.camera, c.rig);
     c.scene.add(this.ui);
@@ -212,6 +217,8 @@ export class AstronautMission {
     if (hop !== L0.lastHop) {
       L0.lastHop = hop;
       this.audio.step(); // felt through the suit, not heard through vacuum
+      this.hopSide = -this.hopSide;
+      this.fx.hop(p.x, p.z, Math.atan2(L0.to.x - L0.from.x, L0.to.z - L0.from.z), this.hopSide);
     }
     p.y = ground + Math.abs(Math.sin(hopPhase * Math.PI)) * HOP_H; // 1/6 g bunny-hop
     this.c.rig.position.copy(p);
@@ -344,6 +351,52 @@ export class AstronautMission {
     });
   }
 
+  /* ---------------------------------------------------------------- cinematic intro */
+  /** Slow 9 s descent from 250 m over the real LOLA terrain to the airlock (comfort: eased, no rotation forced). */
+  startIntro() {
+    const c = document.createElement('canvas');
+    c.width = 1024;
+    c.height = 300;
+    const g = c.getContext('2d')!;
+    g.textAlign = 'center';
+    g.fillStyle = '#ffffff';
+    g.font = '800 120px system-ui, sans-serif';
+    g.fillText('AstroVR', 512, 130);
+    g.fillStyle = '#ff9a4a';
+    g.font = '600 46px system-ui, sans-serif';
+    g.fillText(this.c.getLang() === 'az' ? 'Nobile Rim 1 · Ayın cənub qütbü' : 'Nobile Rim 1 · Moon south pole', 512, 210);
+    const tex = new THREE.CanvasTexture(c);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    const title = new THREE.Mesh(new THREE.PlaneGeometry(1.2, 0.35), new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthTest: false }));
+    title.position.set(0, 0.15, -2);
+    title.renderOrder = 994;
+    this.c.camera.add(title);
+    this.intro = { t: 0, dur: 9, title };
+    void this.audio.suit('intro', lineText(SUIT, 'intro', this.c.getLang()));
+  }
+
+  private updateIntro(dt: number): boolean {
+    const I = this.intro;
+    if (!I) return false;
+    I.t += dt;
+    const u = Math.min(1, I.t / I.dur);
+    const e = u * u * (3 - 2 * u); // ease in-out
+    const a = this.wp('airlock');
+    const end = new THREE.Vector3(a.x, this.ground(a.x, a.z) + EYE, a.z);
+    const start = new THREE.Vector3(a.x + 40, end.y + 140, a.z + 110);
+    const mid = new THREE.Vector3(a.x + 8, end.y + 30, a.z + 26);
+    // quadratic Bezier start → mid → end
+    const p = start.clone().multiplyScalar((1 - e) * (1 - e)).add(mid.clone().multiplyScalar(2 * (1 - e) * e)).add(end.clone().multiplyScalar(e * e));
+    this.c.rig.position.copy(p);
+    (I.title.material as THREE.MeshBasicMaterial).opacity = u < 0.15 ? u / 0.15 : u > 0.75 ? Math.max(0, (1 - u) / 0.25) : 1;
+    if (u >= 1) {
+      this.c.camera.remove(I.title);
+      this.intro = null;
+      this.placeRig('airlock');
+    }
+    return true;
+  }
+
   /* ---------------------------------------------------------------- debug (a.html?debug=1) */
   debugSelect(name: string) {
     return this.gaze.selectByName(name);
@@ -385,6 +438,12 @@ export class AstronautMission {
       void this.audio.suit('protonsArrived', lineText(SUIT, 'protonsArrived', lang));
     }
 
+    if (this.updateIntro(dt)) {
+      this.guide.hideAll();
+      this.gaze.update(dt);
+      return;
+    }
+
     // server disagrees (abort auto-return, reconnect) → follow the authoritative position
     if (s && !this.lope && s.astronaut.waypointId !== this.localWp) {
       if (s.phase === 'aborted' || s.phase === 'debrief') this.placeRig(s.astronaut.waypointId);
@@ -415,6 +474,7 @@ export class AstronautMission {
       });
     }
     this.guide.update(dt, Boolean(this.lope));
+    this.fx.update(dt, s?.sep.active && s.phase !== 'debrief' && !s.astronaut.inAirlock ? s.sep.fluxNorm : 0);
     // radio copy expiry
     if (this.pendingCopy && performance.now() > this.pendingCopy.until) this.clearCopy();
 

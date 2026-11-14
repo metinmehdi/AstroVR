@@ -130,6 +130,7 @@ async function main() {
     transport.sendAction({ kind: 'ready' });
     // live mirror: Mission Control sees exactly this canvas (UI, visor, everything)
     startMirrorSender(transport, renderer.domElement);
+    if (params.get('intro') !== '0') mission.startIntro();
   };
   loaded = true;
   startBtn.disabled = false;

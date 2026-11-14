@@ -21,6 +21,10 @@ export const RADIO: Record<RadioMessageType, { en: string; az: string }> = {
 
 /** Suit computer prompts (not radio: no delay, no beeps). */
 export const SUIT: Lines = {
+  intro: {
+    en: 'This is the south pole of the Moon. The ground below you is real terrain, measured by a NASA laser from lunar orbit.',
+    az: 'Bura Ayın cənub qütbüdür. Altındakı yer realdır, NASA-nın Ay orbitindəki lazeri ilə ölçülüb.',
+  },
   welcome: {
     en: 'Welcome, astronaut. You are at the south pole of the Moon. Your task: collect a rock sample and come back safely. Look at the glowing light to begin.',
     az: 'Xoş gəldin, astronavt. Sən Ayın cənub qütbündəsən. Tapşırığın: daş nümunəsi toplamaq və təhlükəsiz qayıtmaq. Başlamaq üçün parlayan işığa bax.',

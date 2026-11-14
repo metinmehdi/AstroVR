@@ -360,6 +360,135 @@ await step('SVS images', async () => {
   }
 });
 
+// 11) LRO LOLA polar DEM 80 m/px (NASA PDS, LDEM_80S_80M): the REAL mountains around the site out to 60 km, as a ring
+//     mesh for the horizon. Shadows are computed here by ray-marching the DEM toward the real Sun (JPL Horizons,
+//     mission window) and the Moon's curvature is included (horizon drop d²/2R). Range requests: ~30 MB of rows.
+await step('LOLA horizon ring', async () => {
+  const url = 'http://imbrium.mit.edu/DATA/LOLA_GDR/POLAR/IMG/LDEM_80S_80M.IMG';
+  const N = 7600, OFF = 3799.5, SC = 80, ROWB = N * 2, R = MOON_R_KM * 1000;
+  const c = polarXY(SITE.lat, SITE.lon);
+  const cc = c.x / SC + OFF, cr = OFF - c.y / SC; // fractional 0-based pixel (pixel centres at integers)
+  const HP = 1000; // ±80 km window
+  const r0 = Math.max(0, Math.floor(cr) - HP), r1 = Math.min(N - 1, Math.floor(cr) + HP);
+  const c0 = Math.max(0, Math.floor(cc) - HP), c1 = Math.min(N - 1, Math.floor(cc) + HP);
+  const W = c1 - c0 + 1, H = r1 - r0 + 1;
+  const grid = new Float32Array(W * H);
+  const CH = 100;
+  const chunks = [];
+  for (let a = r0; a <= r1; a += CH) chunks.push([a, Math.min(r1, a + CH - 1)]);
+  for (let i = 0; i < chunks.length; i += 5) {
+    await Promise.all(
+      chunks.slice(i, i + 5).map(async ([a, b]) => {
+        const res = await fetch(url, { headers: { Range: `bytes=${a * ROWB}-${(b + 1) * ROWB - 1}` } });
+        if (res.status !== 206) throw new Error(`range request failed: ${res.status}`);
+        const buf = Buffer.from(await res.arrayBuffer());
+        for (let r = a; r <= b; r++) for (let k = 0; k < W; k++) grid[(r - r0) * W + k] = buf.readInt16LE((r - a) * ROWB + (c0 + k) * 2) * 0.5;
+      }),
+    );
+  }
+  const pix = (col, row) => grid[(Math.min(r1, Math.max(r0, row)) - r0) * W + (Math.min(c1, Math.max(c0, col)) - c0)];
+  const inside = (fc, fr) => fc >= c0 && fc <= c1 - 1 && fr >= r0 && fr <= r1 - 1;
+  const lon = (SITE.lon * Math.PI) / 180;
+  const proj = (east, north) => ({ x: c.x + east * Math.cos(lon) + north * Math.sin(lon), y: c.y - east * Math.sin(lon) + north * Math.cos(lon) });
+  const raw = (east, north) => {
+    const p = proj(east, north);
+    const fc = p.x / SC + OFF, fr = OFF - p.y / SC;
+    if (!inside(fc, fr)) return NaN;
+    const j = Math.floor(fc), i = Math.floor(fr), tc = fc - j, tr = fr - i;
+    return (pix(j, i) * (1 - tc) + pix(j + 1, i) * tc) * (1 - tr) + (pix(j, i + 1) * (1 - tc) + pix(j + 1, i + 1) * tc) * tr;
+  };
+  const h0 = raw(0, 0);
+  // height in the site's tangent frame (metres, relative to the site ground), including the curvature drop
+  const hs = (east, north) => raw(east, north) - h0 - (east * east + north * north) / (2 * R);
+
+  // the Sun and Earth at the mission window: same rule as src/shared/realdata.ts (MISSION_SKY)
+  const hz = JSON.parse(await readFile(join(ROOT, 'src/data/horizons-site.json'), 'utf8'));
+  const k = Math.max(0, hz.sun.findIndex((s, i) => s[2] > 0.5 && hz.earth[i] && hz.earth[i][2] > 2));
+  const sun = { utc: hz.sun[k][0], az: hz.sun[k][1], el: hz.sun[k][2] };
+  const earth = { utc: hz.earth[k][0], az: hz.earth[k][1], el: hz.earth[k][2] };
+  const rad = Math.PI / 180;
+  const L = { e: Math.sin(sun.az * rad) * Math.cos(sun.el * rad), n: Math.cos(sun.az * rad) * Math.cos(sun.el * rad), u: Math.sin(sun.el * rad) };
+  const LH = Math.hypot(L.e, L.n);
+  const SUN_R = 0.27; // degrees, solar disk radius → soft penumbra
+
+  /** 0..1 how much of the solar disk is visible from (e, n) at height y (ray-marched over the DEM). */
+  const sunVisible = (e, n, y) => {
+    let worst = Infinity; // smallest (Sun elevation − terrain elevation angle) margin in degrees
+    for (let d = 60; d < 80000; d += Math.max(40, d * 0.015)) {
+      const qe = e + (L.e / LH) * d, qn = n + (L.n / LH) * d;
+      const h = hs(qe, qn);
+      if (Number.isNaN(h)) break;
+      const ang = Math.atan2(h - y, d) / rad;
+      worst = Math.min(worst, sun.el - ang);
+      if (worst < -SUN_R) return 0;
+    }
+    return Math.max(0, Math.min(1, (worst + SUN_R) / (2 * SUN_R)));
+  };
+
+  // horizon mask at the site (1° azimuth): highest terrain elevation angle seen from eye height
+  const EYE = 1.7;
+  const mask = [];
+  for (let a = 0; a < 360; a++) {
+    const se = Math.sin(a * rad), cn = Math.cos(a * rad);
+    let best = -90;
+    for (let d = 100; d < 80000; d += Math.max(40, d * 0.01)) {
+      const h = hs(se * d, cn * d);
+      if (Number.isNaN(h)) break;
+      best = Math.max(best, Math.atan2(h - EYE, d) / rad);
+    }
+    mask.push(Math.round(best * 100) / 100);
+  }
+  const maskAt = (az) => mask[((Math.round(az) % 360) + 360) % 360];
+  const siteSun = sunVisible(0, 0, EYE);
+
+  // ring mesh: AZ azimuths × NR radii (geometric spacing 200 m → 60 km); far cells keep the peak (silhouettes)
+  const AZ = 240, NR = 90, RIN = 200, ROUT = 60000;
+  const radii = Array.from({ length: NR }, (_, i) => RIN * Math.pow(ROUT / RIN, i / (NR - 1)));
+  const heights = [], shade = [];
+  for (let i = 0; i < NR; i++) {
+    const r = radii[i];
+    const dr = r * (Math.pow(ROUT / RIN, 1 / (NR - 1)) - 1);
+    for (let a = 0; a < AZ; a++) {
+      const th = (a / AZ) * 2 * Math.PI;
+      const se = Math.sin(th), cn = Math.cos(th);
+      let h = hs(se * r, cn * r);
+      if (r > 5000) for (let s = -2; s <= 2; s++) h = Math.max(h, hs(se * (r + (s * dr) / 5), cn * (r + (s * dr) / 5)));
+      if (Number.isNaN(h)) h = heights.length >= AZ ? heights[heights.length - AZ] / 10 : 0;
+      // surface normal from the DEM (central differences), lit = soft shadow from the real Sun
+      const g = Math.max(80, r * 0.01);
+      const e = se * r, n = cn * r;
+      const dhe = (hs(e + g, n) - hs(e - g, n)) / (2 * g), dhn = (hs(e, n + g) - hs(e, n - g)) / (2 * g);
+      const nl = (-dhe * L.e - dhn * L.n + L.u) / Math.hypot(dhe, dhn, 1);
+      const lit = Number.isNaN(nl) ? 0 : nl > 0 ? sunVisible(e, n, h + 0.5) : 0;
+      heights.push(Math.round(h * 10));
+      shade.push(Math.round(Math.max(0, Number.isNaN(nl) ? 0 : nl) * lit * 255));
+    }
+  }
+  await save('src/data/horizon-ring.json', {
+    source: 'NASA LRO LOLA polar gridded DEM LDEM_80S_80M (80 m/px, PDS Geosciences Node mirror at MIT)',
+    url,
+    fetchedAt: now,
+    site: SITE,
+    siteElevationM: Math.round(h0),
+    note: 'heights in decimetres relative to the site ground, in the site tangent frame (curvature included); shade = lit × max(0, N·L) × 255 with shadows ray-marched toward the Sun at the mission window',
+    sun: { ...sun, horizonDeg: maskAt(sun.az), visibleFraction: Math.round(siteSun * 100) / 100 },
+    earth: { ...earth, horizonDeg: maskAt(earth.az), visible: earth.el > maskAt(earth.az) },
+    az: AZ,
+    radii: radii.map((r) => Math.round(r * 10) / 10),
+    heights,
+    shade,
+    mask,
+  });
+  console.log(`  site ${Math.round(h0)} m · Sun el ${sun.el}° vs horizon ${maskAt(sun.az)}° (disk visible ${Math.round(siteSun * 100)}%) · Earth el ${earth.el}° vs horizon ${maskAt(earth.az)}°`);
+  manifest.push({
+    id: 'lola-horizon',
+    name: 'LRO LOLA 80 m polar DEM: the real mountains around the site out to 60 km, with real Sun shadows',
+    org: 'NASA LRO LOLA (PDS Geosciences)',
+    url: 'https://pds-geosciences.wustl.edu/missions/lro/lola.htm',
+    usedFor: 'The horizon you see in VR is the real south-pole landscape; dark areas are in real shadow at the mission time',
+  });
+});
+
 // Facts read by the research agent from NASA documents (not fetched as data files)
 manifest.push(
   { id: 'diviner', name: 'LRO Diviner surface temperature at the site: average ~130 K, maximum ~236–263 K; permanently shadowed craters ~25–40 K', org: 'NASA LRO Diviner (PDS Polar Resource Product)', url: 'https://pds-geosciences.wustl.edu/lro/urn-nasa-pds-lro_diviner_derived1/', usedFor: 'Reference fact shown in the science notes (not yet in the game mechanics)' },
