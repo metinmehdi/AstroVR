@@ -481,10 +481,16 @@ export class AstronautMission {
   }
 
   /** While the cadet is in the rocket (Flight), the Moon mission UI sleeps (no gaze, no HUD). */
-  setInFlight(v: boolean) {
+  setInFlight(v: boolean, only: THREE.Object3D[] = []) {
+    this.gaze.only = v ? only : null;
     if (v === this.inFlight) return;
     this.inFlight = v;
     if (v) this.guide.hideAll();
+  }
+
+  /** the gaze input, so the capsule's story screen can add its SKIP button */
+  get gazeInput(): Gaze {
+    return this.gaze;
   }
 
   update(dt: number) {
@@ -493,6 +499,7 @@ export class AstronautMission {
     this.audio.lang = lang;
     if (this.inFlight) {
       this.guide.hideAll();
+      this.gaze.update(dt); // only the capsule's targets (story SKIP) are active
       return;
     }
 

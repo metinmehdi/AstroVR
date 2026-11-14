@@ -84,6 +84,8 @@ export class Flight {
   private said = new Set<string>();
   private rigHome: THREE.Object3D | null = null;
   private onArrive: (() => void) | null = null;
+  /** 0..1: darken the sky on the pad while the story plays on the cinema screen */
+  dim = 0;
 
   constructor(
     private camera: THREE.PerspectiveCamera,
@@ -297,9 +299,10 @@ export class Flight {
   update(dt: number) {
     if (!this.active) return;
     if (!this.flying) {
-      // waiting on the pad: gentle idle (vapour sound is the suit fan)
+      // waiting on the pad (the story may play on the cinema screen: dusk-like sky)
       this.near.scale.setScalar(1);
       this.near.position.y = 0;
+      this.setAltitude(0.55 * this.dim);
       return;
     }
     this.t += dt;

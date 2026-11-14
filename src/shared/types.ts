@@ -116,6 +116,8 @@ export interface SimState {
   /** real seconds when the phase last changed */
   phaseStartedAt: number;
   flight: FlightState | null;
+  /** story intro playing on Mission Control (the phone shows it in VR on the same timeline); null = not playing */
+  story: { id: string; starts: number[]; durs: number[] } | null;
   events: SimEvent[];
 }
 
@@ -131,6 +133,7 @@ export interface AstronautPose {
 /** Phone → room, discrete actions (queued, processed once by Control). */
 export type AstronautAction =
   | { kind: 'ready' } // pressed START on the phone (sensors + audio unlocked)
+  | { kind: 'skipStory' } // looked at SKIP on the in-capsule story screen
   | { kind: 'checklist'; item: ChecklistItem }
   | { kind: 'copy'; msgId: string } // radio read-back "Copy"
   | { kind: 'route'; route: RouteId }

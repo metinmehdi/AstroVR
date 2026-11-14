@@ -17,6 +17,7 @@ import { AstronautMission } from './mission';
 import { addVisor } from './visor';
 import { MirrorTap, startMirrorSender } from '../shared/rtc';
 import { Flight } from './flight';
+import { StoryVR } from './storyVR';
 
 const params = new URLSearchParams(location.search);
 const quality: Quality = params.get('q') === 'high' ? 'high' : 'low';
@@ -101,6 +102,9 @@ async function main() {
 
   // rocket flight to the Moon (story mode): the cadet waits in the capsule, Mission Control launches after the story
   const flight = new Flight(camera, rig, mission.audio, () => lang);
+  // the story intro on a cinema screen in the capsule (same timeline as the projector), SKIP by gaze
+  const storyVR = new StoryVR(mission.gazeInput, () => transport.sendAction({ kind: 'skipStory' }), () => lang);
+  flight.scene.add(storyVR.group);
   let started = false;
   const skipFlight = params.get('intro') === '0';
   const syncFlight = () => {
@@ -115,9 +119,11 @@ async function main() {
     const f = s.flight;
     if (s.phase === 'lobby' || (s.phase === 'briefing' && f?.status === 'pad')) {
       flight.enterPad();
-      mission.setInFlight(true);
+      mission.setInFlight(true, storyVR.targets);
+      storyVR.sync(s.story);
       return;
     }
+    storyVR.sync(null);
     if (s.phase === 'briefing' && f?.status === 'flying') {
       mission.setInFlight(true);
       flight.launch(f.short, Math.max(0, s.t - f.at), () => {
@@ -188,6 +194,8 @@ async function main() {
     head.update();
     moon.update(dt, state);
     syncFlight();
+    storyVR.update(dt);
+    flight.dim = storyVR.level;
     flight.update(dt);
     mission.update(dt);
     stereo.render(flight.active ? flight.scene : moon.scene, camera);

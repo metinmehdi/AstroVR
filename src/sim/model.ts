@@ -30,7 +30,9 @@ export type ControlCommand =
   /** Judge mode ("Stand on the Moon", 60 s): straight onto the surface, joining the REAL storm 45 s after its warning */
   | { kind: 'quickMoon' }
   /** after the story intro: the rocket lifts off (short = 20 s pitch version) */
-  | { kind: 'launch'; short?: boolean };
+  | { kind: 'launch'; short?: boolean }
+  /** story intro started (with its timeline) or ended on Mission Control */
+  | { kind: 'story'; play: boolean; id?: string; starts?: number[]; durs?: number[] };
 
 const SITES: SiteId[] = ['siteA', 'siteB'];
 
@@ -62,6 +64,7 @@ export function createInitialState(_scenario?: Scenario): SimState {
     evaStartedAt: null,
     phaseStartedAt: 0,
     flight: null,
+    story: null,
     events: [],
   };
 }
@@ -182,6 +185,12 @@ export function applyAction(s: SimState, action: AstronautAction, scenario: Scen
     case 'ready':
       log(s, 'astronaut', 'ready');
       return;
+    case 'skipStory':
+      if (s.story) {
+        s.story = null;
+        log(s, 'astronaut', 'storySkipped');
+      }
+      return;
     case 'checklist':
       if (s.phase !== 'prep' && s.phase !== 'briefing') return;
       if (!s.checklist[action.item]) {
@@ -258,6 +267,9 @@ export function applyControl(s: SimState, cmd: ControlCommand, scenario?: Scenar
         setPhase(s, 'briefing');
         s.flight = { status: 'pad', short: false, at: s.t }; // the cadet waits in the capsule during the story
       }
+      return;
+    case 'story':
+      s.story = cmd.play && cmd.id ? { id: cmd.id, starts: cmd.starts ?? [], durs: cmd.durs ?? [] } : null;
       return;
     case 'launch':
       if (s.phase === 'lobby') setPhase(s, 'briefing');

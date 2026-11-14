@@ -31,6 +31,8 @@ import { t } from '../shared/i18n';
 
 const TICK_S = 0.1;
 
+const r3 = (n: number) => Math.round(n * 1000) / 1000;
+
 export function App() {
   const code = useMemo(() => new URLSearchParams(location.search).get('room')?.toUpperCase() ?? makeRoomCode(), []);
   const [lang, setLang] = useState<Lang>('en');
@@ -53,6 +55,9 @@ export function App() {
   const [storyOn, setStoryOn] = useState(() => urlFlags.get('story') !== '0');
   const [shortFlight, setShortFlight] = useState(() => urlFlags.get('pitch') === '1');
   const [story, setStory] = useState<null | 'preview' | 'start' | 'record'>(null);
+  // the phone shows the same story in VR; if the astronaut skips there, the projector story ends too
+  const storyRun = useRef<{ id: string; seen: boolean } | null>(null);
+  const [storySkip, setStorySkip] = useState(false);
   const [preAnswers, setPreAnswers] = useState<number[] | null>(null);
   const [postAnswers, setPostAnswers] = useState<number[] | null>(null);
   const [stats, setStats] = useState<QuizStats>(() => loadStats());
@@ -156,6 +161,13 @@ export function App() {
   );
 
   const s = view;
+  // story skipped in VR: the state's story disappears after we had seen it → end the projector story
+  useEffect(() => {
+    const r = storyRun.current;
+    if (!r || !story) return;
+    if (s.story?.id === r.id) r.seen = true;
+    else if (r.seen) setStorySkip(true);
+  }, [s.story?.id, story]);
   const radioCheckPending = Boolean(lastRadio && lastRadio.type === 'radioCheck' && !lastRadio.lost && lastRadio.id in s.comms.pending);
   const obj = currentObjective(s, { routes: SCENARIO.routes, radioCheckPending });
   const banners = useBanners(s.events, lang);
@@ -298,7 +310,17 @@ export function App() {
         <StoryIntro
           lang={lang}
           record={story === 'record'}
+          skip={storySkip}
+          onPlay={(tl) => {
+            if (story === 'record') return;
+            const id = Math.random().toString(36).slice(2, 10);
+            storyRun.current = { id, seen: false };
+            cmd({ kind: 'story', play: true, id, starts: tl.starts.map(r3), durs: tl.durs.map(r3) });
+          }}
           onEnd={() => {
+            if (storyRun.current) cmd({ kind: 'story', play: false });
+            storyRun.current = null;
+            setStorySkip(false);
             if (story === 'start') cmd({ kind: 'launch', short: shortFlight });
             setStory(null);
           }}

@@ -133,6 +133,8 @@ export function describeEvent(e: SimEvent, lang: Lang): EventText | null {
       return { icon: '📻', text: L(`CAPCOM: “${radioLabel(lang, String(p.type))}” sent`, `CAPCOM: “${radioLabel(lang, String(p.type))}” göndərildi`), tone: 'info', key: false };
     case 'radioLost':
       return { icon: '📵', text: L(`Radio call lost (antenna OFF): “${radioLabel(lang, String(p.type))}”`, `Radio mesajı itdi (antenna sönük): “${radioLabel(lang, String(p.type))}”`), tone: 'danger', key: true };
+    case 'storySkipped':
+      return { icon: '⏭', text: L('The astronaut skipped the story', 'Astronavt hekayəni keçdi'), tone: 'info', key: false };
     case 'launch':
       return { icon: '🚀', text: L('LIFTOFF! The rocket is on its way to the Moon', 'START! Raket Aya yola düşdü'), tone: 'ok', key: true };
     case 'landed':

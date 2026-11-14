@@ -27,6 +27,8 @@ export class Gaze {
   private ringGeo: THREE.RingGeometry;
   private center = new THREE.Vector2(0, 0);
   private cooldown = 0;
+  /** when set, only these targets can be selected (e.g. inside the rocket: just the story SKIP button) */
+  only: THREE.Object3D[] | null = null;
 
   /** Ignore gaze for a moment (e.g. right after arriving somewhere) so targets in front do not fire by accident. */
   pause(seconds: number) {
@@ -88,7 +90,8 @@ export class Gaze {
       return;
     }
     this.ray.setFromCamera(this.center, this.camera);
-    const objects = [...this.targets.values()].filter((t) => t.object.visible && (t.enabled?.() ?? true)).map((t) => t.object);
+    const pool = this.only ? [...this.targets.values()].filter((t) => this.only!.includes(t.object)) : [...this.targets.values()];
+    const objects = pool.filter((t) => t.object.visible && (t.enabled?.() ?? true)).map((t) => t.object);
     const hit = this.ray.intersectObjects(objects, true)[0];
     let target: GazeTarget | null = null;
     if (hit) {
