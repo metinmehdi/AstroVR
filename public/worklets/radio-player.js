@@ -217,8 +217,10 @@ class RadioPlayer extends AudioWorkletProcessor {
             this.fade = this.fadeLen - 1;
             v = (this.last * this.fade) / this.fadeLen;
           }
-          // Turn finished (or the server went quiet for too long): close with a tail.
-          if ((this.turnEnded && this.dryFor > 0.12) || this.dryFor > 1.6) this.closeLink();
+          // Turn finished: close with a tail. Mid-turn the native model can pause to think for a
+          // second or two — keep the carrier open (hiss fills the gap, like a real radio) unless
+          // the server has gone quiet for far too long.
+          if ((this.turnEnded && this.dryFor > 0.12) || this.dryFor > 6) this.closeLink();
         }
       } else if (this.fade > 0) {
         this.fade--;

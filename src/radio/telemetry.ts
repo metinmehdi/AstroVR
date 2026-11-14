@@ -27,7 +27,11 @@ export function telemetryNote(s: SimState | null, lang: Lang): string | null {
   const where = wp ? wp.label[lang] : s.astronaut.waypointId;
   const obj = currentObjective(s);
   const sw = s.switches;
-  const onOff = (b: boolean) => (az ? (b ? 'açıq' : 'bağlı') : b ? 'on' : 'off');
+  // "bağlı" is ambiguous in Azerbaijani (switched off vs. sealed/safe) — the model read
+  // "shielding bağlı" as "safe". Say plainly whether it works.
+  const onOff = (b: boolean) => (az ? (b ? 'İŞLƏYİR' : 'SÖNDÜRÜLÜB (işləmir)') : b ? 'ON' : 'OFF');
+  const exposed = (s.sep.active || s.sep.warning) && !s.astronaut.inAirlock;
+  const unshielded = (s.sep.active || s.sep.warning) && !sw.shelter;
 
   if (az) {
     return [
@@ -39,9 +43,13 @@ export function telemetryNote(s: SimState | null, lang: Lang): string | null {
       `Batareya: ${r1(s.power.batteryKWh)} / ${s.power.batteryMaxKWh} kilovat-saat; günəşdən gələn ${r1(s.power.solarInKW)} kilovat, sərf ${r1(s.power.loadKW)} kilovat.`,
       `Günəş: ${s.sun.blocked ? 'silsilənin arxasındadır, panellər kölgədə' : 'panelləri işıqlandırır'}.`,
       `Günəş fırtınası: ${s.sep.active ? 'İNDİ DAVAM EDİR' : s.sep.warning ? 'xəbərdarlıq verilib, protonlar yoldadır' : 'yoxdur'}.`,
-      `Açarlar: sığınacaq qoruması ${onOff(sw.shelter)}, antenna ${onOff(sw.antenna)}, istixana ${onOff(sw.greenhouse)}, günəş dirəyi ${sw.vsat === 'up' ? 'qalxıb' : sw.vsat === 'raising' ? 'qalxır' : 'aşağıdadır'}.`,
-      `İndi: ${obj.control.az}.`,
-    ].join(' ');
+      `Açarlar: sığınacağın radiasiya qoruması ${onOff(sw.shelter)}, antenna ${onOff(sw.antenna)}, istixana ${onOff(sw.greenhouse)}, günəş dirəyi ${sw.vsat === 'up' ? 'qalxıb' : sw.vsat === 'raising' ? 'qalxır' : 'aşağıdadır'}.`,
+      exposed ? 'DİQQƏT: fırtına var, AstroVR hələ sığınacaqda DEYİL — təhlükəsiz deyil.' : '',
+      unshielded ? 'DİQQƏT: fırtına var, sığınacağın qoruması SÖNDÜRÜLÜB — Missiya İdarəsi onu yandırmalıdır.' : '',
+      `İndi: ${obj.control.az}`,
+    ]
+      .filter(Boolean)
+      .join(' ');
   }
   return [
     '[TELEMETRY — never read aloud, use only if asked]',
@@ -52,7 +60,11 @@ export function telemetryNote(s: SimState | null, lang: Lang): string | null {
     `Battery: ${r1(s.power.batteryKWh)} of ${s.power.batteryMaxKWh} kilowatt-hours; solar in ${r1(s.power.solarInKW)} kilowatts, load ${r1(s.power.loadKW)} kilowatts.`,
     `Sun: ${s.sun.blocked ? 'behind the ridge, panels in shadow' : 'lighting the panels'}.`,
     `Solar storm: ${s.sep.active ? 'HAPPENING NOW' : s.sep.warning ? 'warning issued, protons on the way' : 'none'}.`,
-    `Switches: shelter shielding ${onOff(sw.shelter)}, antenna ${onOff(sw.antenna)}, greenhouse ${onOff(sw.greenhouse)}, solar mast ${sw.vsat}.`,
-    `Now: ${obj.control.en}.`,
-  ].join(' ');
+    `Switches: shelter radiation shielding ${onOff(sw.shelter)}, antenna ${onOff(sw.antenna)}, greenhouse ${onOff(sw.greenhouse)}, solar mast ${sw.vsat}.`,
+    exposed ? 'WARNING: storm on and AstroVR is NOT in the shelter yet — not safe.' : '',
+    unshielded ? 'WARNING: storm on and the shelter shielding is OFF — Mission Control should switch it on.' : '',
+    `Now: ${obj.control.en}`,
+  ]
+    .filter(Boolean)
+    .join(' ');
 }

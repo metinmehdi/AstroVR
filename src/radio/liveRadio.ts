@@ -105,6 +105,12 @@ export class LiveRadio {
   private holdUntil = 0;
   private textTimers = new Set<ReturnType<typeof setTimeout>>();
   private playerOpen = false;
+  /**
+   * Key-down cut the commander off: words of that answer can still arrive (the
+   * transcript trails the audio, even past turnComplete). Hide them until the
+   * NEW answer's first audio arrives.
+   */
+  private textMuted = false;
   private phaseNow: RadioPhase = 'off';
   private lastNote = '';
 
@@ -299,13 +305,14 @@ export class LiveRadio {
       const pcm = base64ToInt16(b64);
       if (!pcm) continue;
       this.turnOpen = true;
+      if (this.awaitingAnswer) this.textMuted = false;
       const startAt = Math.max(ctx.currentTime, this.holdUntil, this.queuedEnd);
       this.queuedEnd = startAt + pcm.length / OUT_RATE;
       this.player.port.postMessage({ pcm: pcm.buffer }, [pcm.buffer]);
     }
 
     const text = sc.outputTranscription?.text;
-    if (text && ctx) {
+    if (text && ctx && !this.textMuted) {
       // Release words about when the voice says them: the audio arrives ~3× faster than it plays.
       const at = Math.max(ctx.currentTime, this.holdUntil, this.queuedEnd - 1.2);
       this.later((at - ctx.currentTime) * 1000, () => this.ev.novaText(text));
@@ -363,6 +370,7 @@ export class LiveRadio {
     this.player.port.postMessage({ clear: true });
     this.player.port.postMessage({ beep: QUINDAR_DOWN });
     this.clearText();
+    this.textMuted = true;
     this.queuedEnd = 0;
     this.holdUntil = 0;
     if (this.turnOpen) this.startDiscard();
