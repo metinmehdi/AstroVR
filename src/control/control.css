@@ -1,0 +1,38 @@
+/* Skeleton styles — P3 replaces with the kid-friendly NASA console design. */
+:root {
+  --bg: #05080d;
+  --panel: #0d1520;
+  --line: #1d2a3a;
+  --text: #e8eef7;
+  --muted: #8ea0b5;
+  --ok: #3ddc84;
+  --warn: #ffc847;
+  --danger: #ff5a4f;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.4 system-ui, sans-serif; }
+.mc { max-width: 1200px; margin: 0 auto; padding: 16px; }
+header { display: flex; align-items: center; gap: 16px; }
+header h1 { font-size: 20px; margin: 0; flex: 1; }
+.ok { color: var(--ok); }
+.bad { color: var(--danger); }
+.warn { color: var(--warn); margin-left: 12px; }
+.danger { color: var(--danger); margin-left: 12px; font-weight: 700; }
+button {
+  background: var(--panel); color: var(--text); border: 1px solid var(--line); border-radius: 10px;
+  padding: 10px 14px; font: inherit; cursor: pointer;
+}
+button:disabled { opacity: 0.4; cursor: default; }
+input { background: var(--panel); color: var(--text); border: 1px solid var(--line); border-radius: 10px; padding: 10px; font: inherit; }
+.lobby { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 24px; }
+.lobby img { background: #fff; border-radius: 12px; }
+.console { display: flex; flex-direction: column; gap: 14px; margin-top: 16px; }
+.row, .switches, .radio { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.gauges { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.gauge { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px; }
+.bar { height: 18px; background: #111b27; border-radius: 9px; overflow: hidden; margin: 8px 0; }
+.bar > div { height: 100%; transition: width 0.25s; }
+small { color: var(--muted); }
+.debrief { background: var(--panel); border: 1px solid var(--warn); border-radius: 12px; padding: 12px; font-size: 20px; }
+.events { color: var(--muted); font: 12px/1.5 ui-monospace, monospace; }
+@media (max-width: 700px) { .gauges { grid-template-columns: 1fr; } }
