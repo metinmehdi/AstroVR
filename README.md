@@ -22,6 +22,9 @@ npm run dev          # http://localhost:5173/control.html  (open a.html?room=COD
 npm run dev:https    # HTTPS on the LAN so phones can use the gyroscope (iPhone requires HTTPS)
 npm test             # simulation unit tests
 npm run build
+npm run check        # typecheck + tests + build: RUN THIS BEFORE EVERY PUSH
+npm run fetch-data   # re-download the real NASA data (needs .env with NASA_API_KEY)
+npm run check-realtime  # Supabase two-client broadcast test
 ```
 Copy `.env.example` → `.env.local` and set the Supabase URL + anon key (Realtime Broadcast, no tables) and a NASA API key.
 
