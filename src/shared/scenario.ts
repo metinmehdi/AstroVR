@@ -1,13 +1,12 @@
 import type { Scenario } from './types';
+import { PROTON_PROFILE, STORM_MINUTES_PER_REAL_SECOND } from './realdata';
 
 /**
- * Demo scenario: Nobile Rim 1 (Artemis III candidate region) + the real solar storm of 11 May 2024.
- * DONKI records (api.nasa.gov/DONKI/SEP, saved in ../../raw/nasa-data-samples/):
- *   flare 2024-05-11T01:10:00-FLR-001 → SEP 2024-05-11T02:10:00-SEP-001 (GOES-P SEISS >100 MeV)
- *   → the real warning time between flare and >100 MeV protons was ~60 min.
- *   With TIME_COMPRESSION = 60 (1 real s = 1 mission min) that is exactly 60 real seconds in game.
- * Intensity: DONKI does not store flux curves. The normalized profile shape below is simplified;
- * absolute dose is anchored to the Artemis I reference storm (see sim/constants.ts). Shown openly in the Science panel.
+ * Demo scenario: Nobile Rim 1 (Artemis III candidate region) + the REAL solar storm of 11 May 2024.
+ * - Timing: NASA DONKI — flare 2024-05-11T01:10:00-FLR-001 → SEP 2024-05-11T02:10:00-SEP-001.
+ * - Intensity: REAL hourly proton measurements from SOHO/EPHIN (NASA SPDF CDAWeb), see src/data/ephin-2024-05.json.
+ *   Replayed STORM_MINUTES_PER_REAL_SECOND (4) storm-minutes per real second so the real ~4 h delay fits a mission.
+ * - Dose: computed from the measured protons with textbook physics (sim/constants.ts) — no invented curve.
  * Waypoints are scene metres around the airlock (x east, z south). TODO(P1): align with the LOLA terrain crop.
  */
 export const NOBILE_MAY2024: Scenario = {
@@ -24,21 +23,12 @@ export const NOBILE_MAY2024: Scenario = {
     donkiIds: ['2024-05-11T01:10:00-FLR-001', '2024-05-11T02:10:00-SEP-001'],
     date: '2024-05-11',
     description: {
-      en: 'On 11 May 2024 a powerful solar flare erupted at 01:10 UTC. About one hour later, very energetic protons (>100 MeV) reached near-Earth space. NASA recorded it in its space-weather database DONKI.',
-      az: '11 may 2024-cü ildə saat 01:10-da (UTC) Günəşdə güclü alov baş verdi. Təxminən bir saat sonra çox enerjili protonlar (>100 MeV) Yer ətrafına çatdı. NASA bunu kosmik hava bazası DONKI-də qeydə alıb.',
+      en: 'On 11 May 2024 a powerful solar flare erupted at 01:10 UTC. About one hour later the first very energetic protons (>100 MeV) arrived, and over the next hours the SOHO spacecraft measured penetrating protons rising about 25 times. NASA recorded the event in its space-weather database DONKI.',
+      az: '11 may 2024-cü ildə saat 01:10-da (UTC) Günəşdə güclü alov baş verdi. Təxminən bir saat sonra ilk çox enerjili protonlar (>100 MeV) gəldi, növbəti saatlarda SOHO kosmik aparatı nüfuzedici protonların təxminən 25 dəfə artdığını ölçdü. NASA bunu kosmik hava bazası DONKI-də qeydə alıb.',
     },
-    fluxProfile: [
-      [0, 0],
-      [55, 0],
-      [60, 0.15],
-      [75, 0.6],
-      [90, 1],
-      [130, 0.8],
-      [180, 0.5],
-      [260, 0.25],
-    ],
-    peakFluxPfu: null, // TODO(P4): fill from GOES >10 MeV record if available
-    source: 'NASA CCMC DONKI (FLR + SEP records), api.nasa.gov',
+    protonProfile: PROTON_PROFILE,
+    stormMinutesPerRealSecond: STORM_MINUTES_PER_REAL_SECOND,
+    source: 'NASA CCMC DONKI (timing) + SOHO/EPHIN via NASA SPDF CDAWeb (proton intensity)',
   },
   timeline: { sunBlockedAfterEvaS: 50, sepWarningAfterEvaS: 70 },
   distanceScale: 10,

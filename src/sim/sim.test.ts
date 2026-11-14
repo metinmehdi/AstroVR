@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { NOBILE_MAY2024 as SC } from '../shared/scenario';
 import type { SimState } from '../shared/types';
-import { applyAction, applyControl, createInitialState, fluxAt, step } from './model';
+import { applyAction, applyControl, createInitialState, protonsAt, step } from './model';
 import { computeDebrief } from './scoring';
 import * as C from './constants';
 
@@ -146,9 +146,23 @@ describe('comms + debrief', () => {
     expect(d.notes).toContain('note.skippedToolCheck');
   });
 
-  it('flux profile interpolates', () => {
-    expect(fluxAt(SC, 0)).toBe(0);
-    expect(fluxAt(SC, 90)).toBe(1);
-    expect(fluxAt(SC, 82.5)).toBeCloseTo(0.8, 5);
+  it('uses the real SOHO/EPHIN profile: quiet at the warning, ~1 min to arrival, strong rise after', () => {
+    const p = SC.realEvent.protonProfile;
+    expect(p.length).toBeGreaterThan(10);
+    expect(protonsAt(SC, 0)).toBeLessThan(1);
+    expect(protonsAt(SC, 40)).toBeLessThan(1.5); // still quiet ~40 s after the warning
+    expect(protonsAt(SC, 100)).toBeGreaterThan(10); // penetrating protons up >10× after arrival
+  });
+
+  it('dose from real protons: open > budget > shadow over the storm (training flight rule)', () => {
+    const rate = (p: number, f: number) => (C.GCR_MGY_PER_H + C.DOSE_MGY_PER_H_PER_INTENSITY * p) * f;
+    let open = 0;
+    let shadow = 0;
+    for (let s = 0; s < 140; s += 0.1) {
+      open += (rate(protonsAt(SC, s), C.OPEN_FACTOR) * 0.1) / 60;
+      shadow += (rate(protonsAt(SC, s), C.SHADOW_FACTOR) * 0.1) / 60;
+    }
+    expect(open).toBeGreaterThan(C.MISSION_DOSE_BUDGET_MGY);
+    expect(shadow).toBeLessThan(C.MISSION_DOSE_BUDGET_MGY);
   });
 });

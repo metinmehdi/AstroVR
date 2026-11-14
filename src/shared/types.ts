@@ -86,7 +86,8 @@ export interface SimState {
   };
   greenhouseHealth: number; // 0..1
   sun: { elevationDeg: number; blocked: boolean };
-  sep: { warning: boolean; active: boolean; fluxNorm: number }; // fluxNorm 0..1 relative to event peak
+  /** protons: real integral intensity 25–53 MeV (cm² s sr)⁻¹; fluxNorm = protons / event peak (for UI bars) */
+  sep: { warning: boolean; active: boolean; protons: number; fluxNorm: number };
   switches: Switches;
   vsatProgress: number; // 0..1 while raising
   astronaut: AstronautLocation;
@@ -192,9 +193,13 @@ export interface Scenario {
     donkiIds: string[];
     date: string; // ISO date of the real event
     description: { en: string; az: string };
-    /** normalized proton flux profile after warning: [secondsAfterWarning, fluxNorm 0..1] */
-    fluxProfile: [number, number][];
-    peakFluxPfu: number | null; // >10 MeV pfu from real record, if known
+    /**
+     * REAL measured penetrating-proton profile after the warning:
+     * [secondsAfterWarning (real s), integral intensity 25–53 MeV in (cm² s sr)⁻¹] from SOHO/EPHIN.
+     */
+    protonProfile: [number, number][];
+    /** storm minutes per real second (replay speed, shown openly) */
+    stormMinutesPerRealSecond: number;
     source: string;
   };
   /** real seconds after EVA start (hatch opens): when the Sun drops behind the ridge, when the SEP warning comes */

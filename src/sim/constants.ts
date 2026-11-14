@@ -30,13 +30,23 @@ export const O2_RESERVE_PCT = 10; // walk-back reserve that must remain on arriv
 export const LOPE_SPEED_MPS = 1.0;
 
 // ---------- Radiation (simplified) ----------
-/** Background galactic cosmic rays on the lunar surface, order of magnitude (VERIFY: LRO CRaTER). */
-export const GCR_MGY_PER_H = 0.025;
+/** Background galactic cosmic rays on the lunar surface, order of magnitude (VERIFY: LRO CRaTER publications). */
+export const GCR_MGY_PER_H = 0.01;
 /**
- * SEP peak anchor: Artemis I (Nature 2024) simulated the Oct-1989 storm inside Orion:
- * 414 µGy/min in the crew area ≈ 24.8 mGy/h. Used as the reference peak at fluxNorm = 1.
+ * Storm dose is COMPUTED from the real measured protons (SOHO/EPHIN 25–53 MeV, see shared/realdata.ts):
+ *   dose rate = I(25–53 MeV) [(cm² s sr)⁻¹] × Ω × S × (MeV→J) ÷ (g→kg) × 3600 s/h × 1000 mGy/Gy
+ * Ω  = 2π sr: on the surface the Moon itself blocks half of the sky.
+ * S  ≈ 16 MeV·cm²/g: proton stopping power in water (tissue) for 25–53 MeV (NIST PSTAR, ~19 at 30 MeV, ~12.5 at 50 MeV).
+ * Protons below ~25 MeV are treated as stopped by the suit + body surface (simplification).
  */
-export const SEP_PEAK_MGY_PER_H = 24.8;
+export const SOLID_ANGLE_SR = 2 * Math.PI;
+export const PROTON_STOPPING_POWER_MEV_CM2_PER_G = 16;
+const MEV_TO_J = 1.602e-13;
+/** mGy per hour per unit of integral intensity (cm² s sr)⁻¹  ≈ 0.058 */
+export const DOSE_MGY_PER_H_PER_INTENSITY =
+  (SOLID_ANGLE_SR * PROTON_STOPPING_POWER_MEV_CM2_PER_G * MEV_TO_J * 3600 * 1000) / 1e-3;
+/** Arrival = protons rise above this multiple of the pre-warning level. */
+export const SEP_ARRIVAL_FACTOR = 3;
 /** Artemis I storm shelter vs crew area: 95 / 414 ≈ 0.23 (≈ 4× less). */
 export const SHELTER_FACTOR_POWERED = 95 / 414;
 /** Habitat walls only (protection system unpowered) — simplification. */
@@ -45,10 +55,12 @@ export const SHELTER_FACTOR_UNPOWERED = 0.5;
 export const SHADOW_FACTOR = 0.6;
 export const OPEN_FACTOR = 1.0;
 /**
- * Game "mission dose budget" (simplified, for learning). Real context: NASA-STD-3001 limits
- * short-term exposure to 250 mGy-Eq (30 days, blood-forming organs). We use a small budget so choices matter.
+ * Training flight rule for this EVA: return before the EVA dose reaches this value.
+ * It follows NASA's ALARA principle (As Low As Reasonably Achievable, NASA-STD-3001) — a conservative
+ * mission rule, far below NASA's 30-day limit (250 mGy-Eq, blood-forming organs). With the real
+ * 11 May 2024 protons: staying in the open ≈ 1.2 mGy, crater shadow ≈ 0.7 mGy, shelter ≈ 0.3 mGy.
  */
-export const MISSION_DOSE_BUDGET_MGY = 10;
+export const MISSION_DOSE_BUDGET_MGY = 0.8;
 
 // ---------- Greenhouse ----------
 /** Health loss per real second with grow lights off (plants stress quickly; cf. OSDR OSD-476). */
@@ -67,7 +79,10 @@ export const SOURCES = {
   shadow: 'NASA lunar radiation modelling (LRO/CRaTER): inside craters solar-storm dose is reduced by ≥40%.',
   vsat: 'NASA Vertical Solar Array Technology (VSAT): ~10 m masts keep arrays in light at the lunar south pole.',
   greenhouse: 'NASA OSDR OSD-476: plants grown in real Apollo lunar soil showed stress responses.',
-  storm: 'NASA DONKI: 11 May 2024 flare (01:10 UTC) → >100 MeV protons (02:10 UTC).',
-  doseBudget: 'Simplified game budget. Real NASA short-term limit (NASA-STD-3001): 250 mGy-Eq per 30 days.',
-  time: '1 real minute ≈ 1 EVA hour. Distances are compressed 10×.',
+  storm: 'NASA DONKI: 11 May 2024 flare (01:10 UTC) → >100 MeV protons (02:10 UTC). Proton intensity: SOHO/EPHIN hourly data (NASA SPDF CDAWeb).',
+  stormDose: 'Dose computed from the measured protons: intensity × 2π sr × stopping power in water (NIST PSTAR).',
+  doseBudget: 'Training flight rule (ALARA, NASA-STD-3001): end the EVA before 0.8 mGy. NASA 30-day limit: 250 mGy-Eq.',
+  time: '1 real minute ≈ 1 EVA hour. The storm data is replayed 4× faster than the mission clock. Distances are compressed 10×.',
+  sun: 'Sun and Earth positions at the site: NASA JPL Horizons.',
+  earth: 'Earth image: NASA EPIC camera on DSCOVR.',
 } as const;

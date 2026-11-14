@@ -1,0 +1,14 @@
+{
+ "source": "NASA Image and Video Library",
+ "fetchedAt": "2026-11-14T09:40:23.186Z",
+ "items": [
+  {
+   "nasaId": "S71-42955",
+   "title": "APOLLO XV - LUNAR SAMPLE (NO. 15415 - \"GENESIS ROCK)",
+   "description": "S71-42955 (August 1971) --- A close-up view of Apollo 15 lunar sample no. 15415 in the Non-Sterile Nitrogen Processing Line (NNPL) in the Lunar Receiving Laboratory (LRL) at the Manned Spacecraft Center (MSC). This sample is the white anorthositic rock (Genesis Rock) collected by astronauts David R. Scott and James B. Irwin in container no. 196 at Site no. 7 at a Ground Elapsed Time of 145 hours and 42 minutes, on the mission's second extravehicular activity (EVA).",
+   "url": "http://images-assets.nasa.gov/image/S71-42955/S71-42955~medium.jpg",
+   "file": "public/images/genesis-rock.jpg",
+   "note": "Apollo 15 sample 15415 \"Genesis Rock\" (anorthosite)"
+  }
+ ]
+}

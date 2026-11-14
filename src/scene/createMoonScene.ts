@@ -8,6 +8,7 @@
  */
 import * as THREE from 'three';
 import type { Scenario, SimState } from '../shared/types';
+import { MISSION_SKY } from '../shared/realdata';
 
 export type Quality = 'low' | 'high';
 
@@ -21,8 +22,12 @@ export interface MoonScene {
 }
 
 const TERRAIN_SIZE = 240; // metres
-const SUN_ELEVATION_DEG = 1.5;
-const SUN_AZIMUTH_DEG = 120;
+/** Horizon direction from azimuth (from north, clockwise) and elevation. Scene axes: x = east, y = up, z = south. */
+function skyDirection(azimuthDeg: number, elevationDeg: number): THREE.Vector3 {
+  const az = THREE.MathUtils.degToRad(azimuthDeg);
+  const el = THREE.MathUtils.degToRad(elevationDeg);
+  return new THREE.Vector3(Math.sin(az) * Math.cos(el), Math.sin(el), -Math.cos(az) * Math.cos(el));
+}
 
 /** Cheap deterministic value noise (placeholder until the LOLA heightmap is wired in). */
 function noise2(x: number, z: number): number {
@@ -91,12 +96,8 @@ export function createMoonScene(scenario: Scenario, quality: Quality = 'low'): M
   starGeo.setAttribute('position', new THREE.BufferAttribute(arr, 3));
   scene.add(new THREE.Points(starGeo, new THREE.PointsMaterial({ color: 0xffffff, size: 1.6, sizeAttenuation: false })));
 
-  // ---- Sun: almost on the horizon
-  const sunDir = new THREE.Vector3().setFromSphericalCoords(
-    1,
-    THREE.MathUtils.degToRad(90 - SUN_ELEVATION_DEG),
-    THREE.MathUtils.degToRad(SUN_AZIMUTH_DEG),
-  );
+  // ---- Sun: REAL position at the site on the mission date (NASA JPL Horizons) — only a few degrees above the horizon
+  const sunDir = skyDirection(MISSION_SKY.sun.azimuthDeg, MISSION_SKY.sun.elevationDeg);
   const sun = new THREE.DirectionalLight(0xfff6e8, 3.2);
   sun.position.copy(sunDir).multiplyScalar(150);
   sun.castShadow = true;
@@ -108,12 +109,15 @@ export function createMoonScene(scenario: Scenario, quality: Quality = 'low'): M
   scene.add(sunDisk);
   scene.add(new THREE.AmbientLight(0x223344, 0.04)); // no atmosphere → near-black shadows
 
-  // ---- Earth: low on the horizon as seen from the south pole (placeholder for Blue Marble texture)
-  const earth = new THREE.Mesh(
-    new THREE.SphereGeometry(16, 32, 32),
-    new THREE.MeshStandardMaterial({ color: 0x3a6fd8, emissive: 0x0b1d44, roughness: 0.8 }),
-  );
-  earth.position.setFromSphericalCoords(850, THREE.MathUtils.degToRad(84), THREE.MathUtils.degToRad(SUN_AZIMUTH_DEG + 70));
+  // ---- Earth: REAL position (JPL Horizons) + REAL photo of Earth (NASA EPIC camera on DSCOVR, public/textures/earth-epic.jpg).
+  // Apparent size from the Moon ≈ 1.9°. TODO(P1): EPIC shows the full day side; the real phase seen from the Moon differs.
+  const earthTex = new THREE.TextureLoader().load('/textures/earth-epic.jpg');
+  earthTex.colorSpace = THREE.SRGBColorSpace;
+  const earth = new THREE.Sprite(new THREE.SpriteMaterial({ map: earthTex, transparent: true, depthWrite: false }));
+  const EARTH_DIST = 850;
+  const earthSize = 2 * EARTH_DIST * Math.tan(THREE.MathUtils.degToRad(0.95));
+  earth.scale.set(earthSize, earthSize, 1);
+  earth.position.copy(skyDirection(MISSION_SKY.earth.azimuthDeg, MISSION_SKY.earth.elevationDeg)).multiplyScalar(EARTH_DIST);
   scene.add(earth);
 
   // ---- waypoint markers (gameplay owner P2 replaces with gaze targets)

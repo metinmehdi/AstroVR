@@ -1,0 +1,52 @@
+{
+ "generatedAt": "2026-11-14T09:40:23.186Z",
+ "site": {
+  "name": "Nobile Rim 1",
+  "lat": -85.4,
+  "lon": 37
+ },
+ "datasets": [
+  {
+   "id": "donki-2024-05",
+   "name": "DONKI solar flares, SEP and CME records, 8–14 May 2024",
+   "org": "NASA CCMC",
+   "url": "https://ccmc.gsfc.nasa.gov/tools/DONKI/",
+   "usedFor": "Storm warning timing (flare 2024-05-11T01:10 → SEP), \"this storm was real\" card"
+  },
+  {
+   "id": "ephin-2024-05",
+   "name": "SOHO EPHIN proton intensity (hourly), 10–14 May 2024",
+   "org": "ESA/NASA SOHO · NASA SPDF CDAWeb",
+   "url": "https://cdaweb.gsfc.nasa.gov/",
+   "usedFor": "Radiation dose rate during the storm (real measured proton intensity curve)"
+  },
+  {
+   "id": "horizons-site",
+   "name": "Sun and Earth azimuth/elevation from Nobile Rim 1, next 30 days",
+   "org": "NASA JPL",
+   "url": "https://ssd.jpl.nasa.gov/horizons/",
+   "usedFor": "Real low-Sun lighting and Earth position in the sky; when the Sun drops behind the ridge"
+  },
+  {
+   "id": "epic",
+   "name": "EPIC full-disk Earth photo, 2026-11-11 00:13:03",
+   "org": "NASA GSFC / NOAA DSCOVR",
+   "url": "https://epic.gsfc.nasa.gov/",
+   "usedFor": "The Earth you see in the lunar sky is a real photo of Earth"
+  },
+  {
+   "id": "nasa-images",
+   "name": "Apollo lunar sample photographs",
+   "org": "NASA",
+   "url": "https://images.nasa.gov/",
+   "usedFor": "Science card shown after collecting a sample"
+  },
+  {
+   "id": "donki-recent",
+   "name": "DONKI space-weather notifications, last 14 days",
+   "org": "NASA CCMC",
+   "url": "https://ccmc.gsfc.nasa.gov/tools/DONKI/",
+   "usedFor": "\"Today's real Sun\" panel (live API, this file is the offline cache)"
+  }
+ ]
+}

@@ -127,7 +127,11 @@ export function App() {
           <div className="row">
             <b>{t(lang, `phase.${s.phase}`)}</b> · EVA {evaClock(s.evaStartedAt === null ? 0 : s.t - s.evaStartedAt)}
             {s.sun.blocked && <span className="warn">☀️ SUN BLOCKED</span>}
-            {s.sep.warning && <span className="danger">☢️ SOLAR STORM {s.sep.active ? 'ACTIVE' : 'WARNING'}</span>}
+            {s.sep.warning && (
+              <span className="danger">
+                ☢️ SOLAR STORM {s.sep.active ? 'ACTIVE' : 'WARNING'} · SOHO protons {s.sep.protons} /(cm²·s·sr)
+              </span>
+            )}
           </div>
           <div className="gauges">
             <Gauge label={`⚡ ${t(lang, 'res.power')}`} value={(s.power.batteryKWh / s.power.batteryMaxKWh) * 100} />

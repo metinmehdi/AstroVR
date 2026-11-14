@@ -44,7 +44,7 @@ export function createInitialState(_scenario?: Scenario): SimState {
     dose: { totalMGy: 0, rateMGyPerH: C.GCR_MGY_PER_H, budgetPct: 0 },
     greenhouseHealth: 1,
     sun: { elevationDeg: 1.5, blocked: false },
-    sep: { warning: false, active: false, fluxNorm: 0 },
+    sep: { warning: false, active: false, protons: 0, fluxNorm: 0 },
     switches: { vsat: 'down', antenna: true, shelter: false, greenhouse: true },
     vsatProgress: 0,
     astronaut: { waypointId: 'airlock', inAirlock: true, inShadow: false, distanceToBaseM: 0 },
@@ -126,9 +126,9 @@ function o2Rate(s: SimState) {
   return C.O2_PCT_PER_S * (s.checklist.suitCheck ? 1 : C.O2_LEAK_FACTOR);
 }
 
-/** Linear interpolation of the normalized flux profile. */
-export function fluxAt(scenario: Scenario, secondsAfterWarning: number): number {
-  const p = scenario.realEvent.fluxProfile;
+/** Real measured proton intensity (25–53 MeV) at a time after the warning — linear interpolation of SOHO/EPHIN data. */
+export function protonsAt(scenario: Scenario, secondsAfterWarning: number): number {
+  const p = scenario.realEvent.protonProfile;
   if (secondsAfterWarning <= p[0][0]) return p[0][1];
   for (let i = 1; i < p.length; i++) {
     const [t1, v1] = p[i];
@@ -307,12 +307,14 @@ export function step(s: SimState, dt: number, scenario: Scenario) {
 
   // --- solar storm flux
   const afterWarning = s.sep.warning && s.evaStartedAt !== null ? e - scenario.timeline.sepWarningAfterEvaS : -1;
-  const flux = afterWarning >= 0 ? fluxAt(scenario, afterWarning) : 0;
-  if (flux > 0 && !s.sep.active) {
+  const profile = scenario.realEvent.protonProfile;
+  const protons = afterWarning >= 0 ? protonsAt(scenario, afterWarning) : 0;
+  if (afterWarning >= 0 && !s.sep.active && protons > profile[0][1] * C.SEP_ARRIVAL_FACTOR) {
     s.sep.active = true;
-    log(s, 'system', 'sepArrival');
+    log(s, 'system', 'sepArrival', { protons: round2(protons) });
   }
-  s.sep.fluxNorm = flux;
+  s.sep.protons = round2(protons);
+  s.sep.fluxNorm = round2(protons / Math.max(...profile.map(([, v]) => v)));
 
   // --- VSAT mast
   if (s.switches.vsat === 'raising') {
@@ -358,7 +360,8 @@ export function step(s: SimState, dt: number, scenario: Scenario) {
     : s.astronaut.inShadow
       ? C.SHADOW_FACTOR
       : C.OPEN_FACTOR;
-  const rate = (C.GCR_MGY_PER_H + C.SEP_PEAK_MGY_PER_H * flux) * factor; // mGy per mission hour
+  // mGy per mission hour, computed from the real measured protons (see constants.ts)
+  const rate = (C.GCR_MGY_PER_H + C.DOSE_MGY_PER_H_PER_INTENSITY * protons) * factor;
   s.dose.rateMGyPerH = round2(rate);
   s.dose.totalMGy += (rate * dt) / 60;
   s.dose.budgetPct = round1((s.dose.totalMGy / C.MISSION_DOSE_BUDGET_MGY) * 100);
