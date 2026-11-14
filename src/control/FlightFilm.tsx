@@ -35,6 +35,7 @@ export function FlightFilm({
   const [t, setT] = useState(0);
   const [hidden, setHidden] = useState(false);
   const [src] = useState(() => filmSrc()); // the in-memory copy (preloaded in the lobby) when ready
+  const [vidReady, setVidReady] = useState(false);
 
   // a smooth local clock anchored to the simulation's launch time
   const simT = state.t - f.at;
@@ -86,11 +87,12 @@ export function FlightFilm({
   }, [t, plan, lang]);
 
   // the real footage, kept in step with the clock
-  const filmOn = t >= plan.filmStart - 0.05 && t < plan.total + 0.5;
+  const filmTime = t >= plan.filmStart - 0.05 && t < plan.total + 0.5;
+  const filmOn = filmTime && vidReady; // never show a black frame: until the footage can play, the cabin view stays full screen
   useEffect(() => {
     const v = video.current;
     if (!v) return;
-    if (!filmOn) {
+    if (!filmTime) {
       if (!v.paused) v.pause();
       return;
     }
@@ -99,7 +101,7 @@ export function FlightFilm({
       v.currentTime = target;
       void v.play().catch(() => {});
     } else if (Math.abs(v.currentTime - target) > 0.35) v.currentTime = target;
-  }, [t, filmOn, plan]);
+  }, [t, filmTime, plan]);
 
   const ev = [...plan.events].reverse().find((e) => t >= e.t && t < e.t + 4.5);
   const met = t - plan.liftoff;
@@ -114,7 +116,7 @@ export function FlightFilm({
   }
   return (
     <div className="ff-overlay">
-      <video ref={video} className={`ff-video ${filmOn ? 'on' : ''}`} src={src} muted playsInline preload="auto" />
+      <video ref={video} className={`ff-video ${filmOn ? 'on' : ''}`} src={src} muted playsInline preload="auto" onCanPlay={() => setVidReady(true)} onPlaying={() => setVidReady(true)} />
       <div className={`ff-mirror ${filmOn ? 'corner' : 'full'}`}>
         <MirrorView stream={stream} poseRef={poseRef} state={state} lang={lang} broadcast={!filmOn} />
       </div>
