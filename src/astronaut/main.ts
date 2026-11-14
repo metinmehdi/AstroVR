@@ -18,6 +18,7 @@ import { addVisor } from './visor';
 import { MirrorTap, startMirrorSender } from '../shared/rtc';
 import { Flight } from './flight';
 import { StoryVR } from './storyVR';
+import { setMaxAnisotropy } from './text';
 import { preloadFilm } from '../shared/filmCache';
 import { clockInfo, sharedNow, startClockClient } from '../shared/clock';
 import { ROAR_URL, filmPlan } from '../shared/flightFilm';
@@ -33,6 +34,31 @@ const overlay = document.getElementById('overlay') as HTMLDivElement;
 const startBtn = document.getElementById('start') as HTMLButtonElement;
 const info = document.getElementById('info') as HTMLParagraphElement;
 const banner = document.getElementById('banner') as HTMLDivElement;
+// in the VR box each eye needs its own copy of the "signal lost" banner
+const banner2 = banner.cloneNode(true) as HTMLDivElement;
+banner2.id = 'banner2';
+document.body.appendChild(banner2);
+// distance between the VR box's lens centres (mm): set once on the start screen, remembered on this phone
+const lensOut = document.getElementById('lensMm') as HTMLSpanElement;
+let lensMm = 62;
+try {
+  lensMm = Number(new URLSearchParams(location.search).get('lens') ?? localStorage.getItem('astrovr.lensMm') ?? 62) || 62;
+} catch {
+  /* private mode */
+}
+function setLens(mm: number) {
+  lensMm = Math.min(72, Math.max(52, mm));
+  lensOut.textContent = `${lensMm} mm`;
+  try {
+    localStorage.setItem('astrovr.lensMm', String(lensMm));
+  } catch {
+    /* private mode */
+  }
+  window.dispatchEvent(new CustomEvent('astrovr:lens', { detail: lensMm }));
+}
+setLens(lensMm);
+(document.getElementById('lensMinus') as HTMLButtonElement).onclick = () => setLens(lensMm - 1);
+(document.getElementById('lensPlus') as HTMLButtonElement).onclick = () => setLens(lensMm + 1);
 
 let lang: Lang = 'en';
 let state: SimState | null = null;
@@ -43,6 +69,8 @@ function applyLang() {
   startBtn.textContent = loaded ? t(lang, 'astro.start') : '…';
   info.textContent = t(lang, 'astro.instructions');
   banner.textContent = t(lang, 'astro.signalLost');
+  banner2.textContent = banner.textContent;
+  (document.getElementById('lensLabel') as HTMLSpanElement).textContent = lang === 'az' ? 'VR box linzaları arası' : 'VR box lens distance';
 }
 
 async function main() {
@@ -58,8 +86,12 @@ async function main() {
   startClockClient(transport); // one clock with Mission Control → voices play on both devices at the same instant
 
   // ---- three.js
-  const renderer = new THREE.WebGLRenderer({ antialias: quality === 'high', powerPreference: 'high-performance' });
-  renderer.setPixelRatio(Math.min(devicePixelRatio, quality === 'high' ? 2 : 1.5));
+  // sharp in a VR box: antialiased, close to the screen's real resolution (adapted to the phone's speed below)
+  const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+  const maxRatio = Math.min(devicePixelRatio, quality === 'high' ? 3 : 2.5);
+  let pixelRatio = Math.min(devicePixelRatio, 2);
+  renderer.setPixelRatio(pixelRatio);
+  setMaxAnisotropy(renderer.capabilities.getMaxAnisotropy());
   renderer.setSize(innerWidth, innerHeight);
   renderer.shadowMap.enabled = true;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -106,7 +138,10 @@ async function main() {
     }
   });
   transport.onState((s) => (state = s));
-  transport.onConnection((ok) => (banner.hidden = ok));
+  transport.onConnection((ok) => {
+    banner.hidden = ok;
+    banner2.hidden = ok;
+  });
   // CAPCOM messages arrive after the real Earth–Moon light delay (1.28 s)
   transport.onRadio((msg: RadioMessage) => {
     if (msg.lost) return;
@@ -187,6 +222,9 @@ async function main() {
 
   const stereo = new StereoRenderer(renderer);
   stereo.enabled = params.get('mono') !== '1';
+  stereo.lensMm = lensMm;
+  document.body.classList.toggle('stereo', stereo.enabled);
+  addEventListener('astrovr:lens', (e) => (stereo.lensMm = (e as CustomEvent<number>).detail));
   const mirrorTap = new MirrorTap(20, 540);
 
   addEventListener('resize', () => {
@@ -237,6 +275,9 @@ async function main() {
   }, 1000 / POSE_PUBLISH_HZ);
 
   const timer = new THREE.Timer();
+  let frames = 0;
+  let frameMs = 0;
+  let lastAdapt = performance.now();
   renderer.setAnimationLoop((now) => {
     timer.update(now);
     const dt = Math.max(0, Math.min(timer.getDelta(), 0.1)); // never negative (rAF timestamps can step back)
@@ -250,7 +291,24 @@ async function main() {
     lamp.visible = !flight.active; // the helmet lamp is for the polar shadows, not inside the capsule
     mission.update(dt);
     stereo.render(flight.active ? flight.scene : moon.scene, camera);
-    mirrorTap.capture(renderer.domElement, stereo.enabled, now);
+    // the projector renders the flight itself (TwinFlight) → no video copy needed then (saves the phone's GPU)
+    if (!flight.active) mirrorTap.capture(renderer.domElement, stereo.enabled, now);
+    // adapt the resolution to the phone: sharp when it can, smooth always
+    frames++;
+    frameMs += dt * 1000;
+    if (now - lastAdapt > 2500 && frames > 30) {
+      const avg = frameMs / frames;
+      const next = avg > 24 ? pixelRatio - 0.25 : avg < 14 ? pixelRatio + 0.25 : pixelRatio;
+      const clamped = Math.min(maxRatio, Math.max(1, next));
+      if (clamped !== pixelRatio) {
+        pixelRatio = clamped;
+        renderer.setPixelRatio(pixelRatio);
+        renderer.setSize(innerWidth, innerHeight);
+      }
+      frames = 0;
+      frameMs = 0;
+      lastAdapt = now;
+    }
   });
 }
 

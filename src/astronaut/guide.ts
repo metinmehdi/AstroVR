@@ -7,6 +7,7 @@
  *  - success burst + chime on every completed step
  */
 import * as THREE from 'three';
+import { TEXT_SCALE, begin, crisp } from './text';
 import type { Lang } from '../shared/types';
 import type { Objective } from '../shared/objective';
 
@@ -66,13 +67,12 @@ export class Guide {
     private heightAt: (x: number, z: number) => number,
   ) {
     // HUD panel
-    this.hudCanvas.width = 1024;
-    this.hudCanvas.height = 420;
-    this.hudTex = new THREE.CanvasTexture(this.hudCanvas);
-    this.hudTex.colorSpace = THREE.SRGBColorSpace;
+    this.hudCanvas.width = 1024 * TEXT_SCALE;
+    this.hudCanvas.height = 420 * TEXT_SCALE;
+    this.hudTex = crisp(new THREE.CanvasTexture(this.hudCanvas));
     this.hudMesh = new THREE.Mesh(
-      new THREE.PlaneGeometry(1.0, 0.41),
-      new THREE.MeshBasicMaterial({ map: this.hudTex, transparent: true, depthTest: false, depthWrite: false }),
+      new THREE.PlaneGeometry(1.25, 0.5125),
+      new THREE.MeshBasicMaterial({ map: this.hudTex, transparent: true, depthTest: false, depthWrite: false, toneMapped: false }),
     );
     this.hudMesh.renderOrder = 990;
     this.hud.add(this.hudMesh);
@@ -303,8 +303,8 @@ export class Guide {
   private draw() {
     this.dirty = false;
     const g = this.hudCanvas.getContext('2d')!;
-    const W = this.hudCanvas.width;
-    g.clearRect(0, 0, W, this.hudCanvas.height);
+    const W = 1024; // logical units (the canvas is TEXT_SCALE× sharper)
+    begin(g);
     const o = this.objective;
     // card
     g.fillStyle = this.vitals.storm ? 'rgba(60,8,8,0.82)' : 'rgba(4,10,20,0.78)';
@@ -323,7 +323,7 @@ export class Guide {
       g.fillStyle = i + 1 < step ? '#3ddc84' : i + 1 === step ? '#ff7a1a' : '#33414f';
       g.fill();
       g.fillStyle = i + 1 === step ? '#ffffff' : '#8ea0b5';
-      g.font = `${i + 1 === step ? '700 ' : ''}26px system-ui, sans-serif`;
+      g.font = `${i + 1 === step ? '700 ' : '600 '}30px system-ui, sans-serif`;
       g.textAlign = 'center';
       g.fillText(names[i], x, 92);
     }
@@ -334,13 +334,13 @@ export class Guide {
       g.textBaseline = 'middle';
       g.fillText(o.icon, 40, 192);
       g.fillStyle = '#ffffff';
-      g.font = '700 46px system-ui, sans-serif';
-      wrap(g, o.astro[this.lang], 170, 170, W - 200, 54, 2);
+      g.font = '700 48px system-ui, sans-serif';
+      wrap(g, o.astro[this.lang], 170, 168, W - 196, 56, 2);
     }
     // vitals
-    g.font = '600 30px system-ui, sans-serif';
+    g.font = '700 34px system-ui, sans-serif';
     g.textAlign = 'left';
-    g.fillStyle = '#cfd8e3';
+    g.fillStyle = '#e6edf5';
     const v = this.vitals;
     g.fillText(`🫁 ${Math.round(v.o2)}%    ☢️ ${v.dose.toFixed(2)} mGy    ⏱ EVA ${v.clock}`, 40, 268);
     // how to walk (shown whenever the step is "go somewhere" and no radio caption is up)
@@ -349,7 +349,7 @@ export class Guide {
       rounded(g, 8, 322, W - 16, 90, 24);
       g.fill();
       g.fillStyle = '#ffb27a';
-      g.font = '700 32px system-ui, sans-serif';
+      g.font = '700 34px system-ui, sans-serif';
       g.textAlign = 'left';
       wrap(g, this.lang === 'az' ? '👁 Getmək üçün işıq sütununa və ya yerdəki oxlara 2 saniyə bax' : '👁 To walk, look at the light beam or the arrows on the ground for 2 seconds', 30, 352, W - 60, 36, 2);
     }
@@ -359,8 +359,8 @@ export class Guide {
       rounded(g, 8, 322, W - 16, 90, 24);
       g.fill();
       g.fillStyle = '#ffd27f';
-      g.font = '600 32px system-ui, sans-serif';
-      wrap(g, `📻 ${this.caption}`, 30, 352, W - 60, 36, 2);
+      g.font = '700 34px system-ui, sans-serif';
+      wrap(g, `📻 ${this.caption}`, 30, 352, W - 60, 38, 2);
     }
     this.hudTex.needsUpdate = true;
   }

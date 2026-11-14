@@ -24,16 +24,26 @@
         border: 0; border-radius: 999px; padding: 22px 64px;
       }
       #start:disabled { background: #444; color: #aaa; }
-      #banner {
+      #banner, #banner2 {
         position: fixed; top: 8px; left: 50%; transform: translateX(-50%); z-index: 3;
         background: #b3261e; color: #fff; padding: 6px 14px; border-radius: 8px; font: 600 14px system-ui, sans-serif;
       }
+      #banner2 { display: none; }
+      body.stereo #banner { left: 25%; top: 30%; }
+      body.stereo #banner2 { display: block; left: 75%; top: 30%; }
+      body.stereo #banner2[hidden] { display: none; }
+      #lens { display: flex; align-items: center; gap: 12px; font: 600 15px system-ui, sans-serif; color: #9fb0c4; }
+      #lens button { width: 44px; height: 44px; border-radius: 50%; border: 1px solid #3a4a5e; background: #111a26; color: #fff; font: 700 22px system-ui; }
+      #lensMm { min-width: 70px; color: #fff; font-weight: 800; }
     </style>
   </head>
   <body>
     <div id="overlay">
       <p id="info"></p>
       <button id="start" disabled>…</button>
+      <div id="lens"><span id="lensLabel">VR box lens distance</span>
+        <button id="lensMinus" aria-label="-">−</button><span id="lensMm">62 mm</span><button id="lensPlus" aria-label="+">+</button>
+      </div>
     </div>
     <div id="banner" hidden></div>
     <script type="module" src="/src/astronaut/main.ts"></script>

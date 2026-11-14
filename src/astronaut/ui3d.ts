@@ -1,5 +1,6 @@
 /** World-space UI for VR: icon buttons (gaze targets) and the wrist panel. Canvas textures, no DOM. */
 import * as THREE from 'three';
+import { begin, centredLabel, crisp, hiCanvas } from './text';
 
 export interface Button3D {
   mesh: THREE.Mesh;
@@ -18,19 +19,16 @@ function roundRect(g: CanvasRenderingContext2D, x: number, y: number, w: number,
 
 /** A floating icon button. Size in metres. Always faces the viewer (call faceCamera each frame). */
 export function makeButton(icon: string, label: string, color = '#ffc847', widthM = 0.9): Button3D {
-  const canvas = document.createElement('canvas');
-  canvas.width = 512;
-  canvas.height = 256;
+  const canvas = hiCanvas(512, 256);
   const g = canvas.getContext('2d')!;
-  const tex = new THREE.CanvasTexture(canvas);
-  tex.colorSpace = THREE.SRGBColorSpace;
+  const tex = crisp(new THREE.CanvasTexture(canvas));
   const mesh = new THREE.Mesh(
     new THREE.PlaneGeometry(widthM, widthM / 2),
-    new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false }),
+    new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false, toneMapped: false }),
   );
   mesh.renderOrder = 10;
   const setText = (ic: string, lb: string, col = color) => {
-    g.clearRect(0, 0, 512, 256);
+    begin(g);
     roundRect(g, 8, 8, 496, 240, 48);
     g.fillStyle = 'rgba(5,10,18,0.82)';
     g.fill();
@@ -39,11 +37,11 @@ export function makeButton(icon: string, label: string, color = '#ffc847', width
     g.stroke();
     g.textAlign = 'center';
     g.textBaseline = 'middle';
-    g.font = '96px system-ui, "Apple Color Emoji", "Segoe UI Emoji", sans-serif';
-    g.fillText(ic, 256, 98);
-    g.fillStyle = '#e8eef7';
-    g.font = '700 40px system-ui, sans-serif';
-    g.fillText(lb, 256, 196, 470);
+    g.fillStyle = '#ffffff';
+    g.font = '84px system-ui, "Apple Color Emoji", "Segoe UI Emoji", sans-serif';
+    g.fillText(ic, 256, 84);
+    g.fillStyle = '#ffffff';
+    centredLabel(g, lb, 256, 186, 468, 58, 40); // big, never squeezed: two lines if needed
     tex.needsUpdate = true;
   };
   setText(icon, label, color);
@@ -63,15 +61,12 @@ export class WristPanel {
   private tex: THREE.CanvasTexture;
 
   constructor(camera: THREE.Camera, parent: THREE.Object3D) {
-    const canvas = document.createElement('canvas');
-    canvas.width = 512;
-    canvas.height = 320;
+    const canvas = hiCanvas(512, 320);
     this.g = canvas.getContext('2d')!;
-    this.tex = new THREE.CanvasTexture(canvas);
-    this.tex.colorSpace = THREE.SRGBColorSpace;
+    this.tex = crisp(new THREE.CanvasTexture(canvas));
     this.mesh = new THREE.Mesh(
-      new THREE.PlaneGeometry(0.32, 0.2),
-      new THREE.MeshBasicMaterial({ map: this.tex, transparent: true, depthWrite: false }),
+      new THREE.PlaneGeometry(0.36, 0.225),
+      new THREE.MeshBasicMaterial({ map: this.tex, transparent: true, depthWrite: false, toneMapped: false }),
     );
     // attached to the rig (body), not the head: bottom-left, tilted up toward the eyes
     this.mesh.position.set(-0.22, -0.55, -0.42);
@@ -83,7 +78,7 @@ export class WristPanel {
 
   draw(o2Pct: number, walkbackPct: number, doseMGy: number, budgetPct: number, rateMGyH: number, task: string) {
     const g = this.g;
-    g.clearRect(0, 0, 512, 320);
+    begin(g);
     roundRect(g, 4, 4, 504, 312, 28);
     g.fillStyle = 'rgba(3,8,14,0.9)';
     g.fill();
@@ -112,9 +107,7 @@ export class WristPanel {
     g.font = '24px system-ui, sans-serif';
     g.fillText(`${rateMGyH.toFixed(2)} mGy/h`, 392, 196);
     g.fillStyle = '#ffc847';
-    g.font = '700 30px system-ui, sans-serif';
-    g.textAlign = 'center';
-    g.fillText(task, 256, 270, 480);
+    centredLabel(g, task, 256, 268, 484, 34, 26);
     this.tex.needsUpdate = true;
   }
 }

@@ -165,7 +165,7 @@ export class StoryCanvas {
     if (!last) this.subtitle(STORY[shot.line][lang], Math.min(1, local / 0.6, (dur - local) / 0.4));
     g.globalAlpha = 0.6;
     g.fillStyle = '#c9d2dc';
-    g.font = `500 ${Math.round(H * 0.019)}px system-ui, sans-serif`;
+    g.font = `${this.letterbox ? 500 : 600} ${Math.round(H * (this.letterbox ? 0.019 : 0.03))}px system-ui, sans-serif`;
     g.textAlign = 'right';
     g.textBaseline = 'middle';
     g.fillText(shot.credit[lang], W - W * 0.018, this.letterbox ? this.bar / 2 : H * 0.04);
@@ -267,19 +267,19 @@ export class StoryCanvas {
     g.globalAlpha = Math.max(0, alpha);
     g.textAlign = 'center';
     g.textBaseline = 'middle';
-    g.font = `600 ${Math.round((this.letterbox ? 31 : 44) * k)}px system-ui, sans-serif`;
+    g.font = `700 ${Math.round((this.letterbox ? 31 : 64) * k)}px system-ui, sans-serif`; // VR: big enough for a phone VR box
     const words = text.split(' ');
     const lines: string[] = [];
     let line = '';
     for (const w of words) {
       const t = line ? `${line} ${w}` : w;
-      if (g.measureText(t).width > W * (this.letterbox ? 0.88 : 0.6) && line) {
+      if (g.measureText(t).width > W * (this.letterbox ? 0.88 : 0.7) && line) {
         lines.push(line);
         line = w;
       } else line = t;
     }
     if (line) lines.push(line);
-    const lh = (this.letterbox ? 38 : 52) * k;
+    const lh = (this.letterbox ? 38 : 74) * k;
     const cy = this.letterbox ? H - this.bar / 2 : H - 165 * k; // VR: a bit above the bottom of the curved screen
     if (!this.letterbox) {
       // dark band behind the subtitle so it reads on any picture
