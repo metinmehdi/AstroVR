@@ -31,13 +31,11 @@ export function Rail({
 }) {
   return (
     <nav className="rail" aria-label={L(lang, 'Views', 'Görünüşlər')}>
-      <div className="rail-logo" aria-hidden="true">
-        <svg viewBox="0 0 40 40">
-          <circle cx="20" cy="20" r="10" fill="#dbe4f3" />
-          <circle cx="16.5" cy="17" r="2.4" fill="#9fb0c8" />
-          <circle cx="23.5" cy="24" r="1.7" fill="#9fb0c8" />
-          <ellipse cx="20" cy="20" rx="17" ry="6.5" fill="none" stroke="#3b82f6" strokeWidth="2.2" transform="rotate(-24 20 20)" />
-        </svg>
+      <div className="rail-logo">
+        <img src="/images/astrovr-logo.png" alt="AstroVR" width={259} height={346} />
+        <span className="rail-word" aria-hidden="true">
+          AstroVR
+        </span>
       </div>
       <button className={`rail-btn ${!broadcast ? 'on' : ''}`} onClick={() => broadcast && onBroadcast()} aria-label={tr(lang, 'mc.operator')} title={tr(lang, 'mc.operator')}>
         <Icon name="globe" size={20} />
