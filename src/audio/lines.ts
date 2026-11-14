@@ -66,7 +66,7 @@ export const FLIGHT: Lines = {
   inSpace: { en: 'Engines off. You are in space. Look to your left: that is our Earth.', az: 'Mühərriklər söndü. Kosmosdasan. Sola bax: bu, bizim Yerdir.' },
   transit: {
     en: 'Three days and three hundred eighty-four thousand kilometres to the Moon.',
-    az: 'Aya qədər üç gün və üç yüz səksən dörd min kilometr.',
+    az: 'Aya qədər üç günlük yol var: üç yüz səksən dörd min kilometr.',
   },
   arrival: { en: 'Moon arrival. Starting the descent to the south pole.', az: 'Aya çatdıq. Cənub qütbünə enməyə başlayırıq.' },
 };

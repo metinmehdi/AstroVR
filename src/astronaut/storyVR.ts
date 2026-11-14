@@ -11,8 +11,10 @@ import type { Gaze } from './gaze';
 import { makeButton, type Button3D } from './ui3d';
 
 const SEAT_Y = 1.25;
-const CW = 768;
-const CH = 432;
+const CW = 1024;
+const CH = 576;
+const R = 4; // radius of the curved screen around the cadet
+const ARC = (120 * Math.PI) / 180; // 120° wide → fills the whole view of a phone VR box
 
 export class StoryVR {
   readonly group = new THREE.Group();
@@ -34,20 +36,20 @@ export class StoryVR {
   ) {
     this.tex = new THREE.CanvasTexture(this.sc.canvas);
     this.tex.colorSpace = THREE.SRGBColorSpace;
-    this.screenMat = new THREE.MeshBasicMaterial({ map: this.tex, transparent: true, opacity: 0, toneMapped: false });
-    const screen = new THREE.Mesh(new THREE.PlaneGeometry(4.8, 2.7), this.screenMat);
-    this.frameMat = new THREE.MeshBasicMaterial({ color: 0xff7a1a, transparent: true, opacity: 0 });
-    const frame = new THREE.Mesh(new THREE.PlaneGeometry(4.92, 2.82), this.frameMat);
-    frame.position.z = -0.01;
-    const holder = new THREE.Group();
-    holder.add(frame, screen);
-    holder.position.set(0, SEAT_Y + 0.75, -4.2);
-    holder.lookAt(0, SEAT_Y, 0);
-    this.group.add(holder);
+    // seen from inside the cylinder the image would be mirrored: flip U
+    this.tex.wrapS = THREE.RepeatWrapping;
+    this.tex.repeat.x = -1;
+    this.screenMat = new THREE.MeshBasicMaterial({ map: this.tex, transparent: true, opacity: 0, toneMapped: false, side: THREE.BackSide });
+    const height = (R * ARC * CH) / CW; // keep 16:9 along the arc
+    const screen = new THREE.Mesh(new THREE.CylinderGeometry(R, R, height, 64, 1, true, Math.PI - ARC / 2, ARC), this.screenMat);
+    screen.position.set(0, SEAT_Y + 0.1, 0);
+    this.frameMat = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0 });
+    this.group.add(screen);
 
-    // lower-right corner of the screen, above the canopy rim so the label is never hidden
-    this.skip = makeButton('⏭', 'SKIP', '#ff7a1a', 0.9);
-    this.skip.mesh.position.set(0.95, SEAT_Y - 0.4, -2.6); // between the canopy struts
+    // top-right of the view, in front of the screen (subtitles live at the bottom)
+    this.skip = makeButton('⏭', 'SKIP', '#ff7a1a', 0.75);
+    this.skip.mesh.position.set(1.05, SEAT_Y + 0.85, -2.3);
+    this.skip.mesh.renderOrder = 20;
     this.skip.mesh.lookAt(0, SEAT_Y, 0);
     this.skip.mesh.name = 'story:skip';
     this.group.add(this.skip.mesh);
@@ -95,7 +97,7 @@ export class StoryVR {
     this.skip.mesh.visible = this.level > 0.5 && this.current !== null;
     if (!this.current) return;
     this.acc += dt;
-    if (this.acc < 1 / 24) return; // ~24 fps texture updates are plenty and cheap
+    if (this.acc < 1 / 22) return; // ~22 fps texture updates: smooth enough, cheap on phones
     this.acc = 0;
     const el = (performance.now() - this.current.t0) / 1000;
     this.sc.frame(Math.min(el, this.current.tl.total), this.current.tl, this.getLang());

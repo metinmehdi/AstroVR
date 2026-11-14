@@ -26,8 +26,9 @@ interface Plan {
   arrival: number;
 }
 const PLANS: Record<'full' | 'short', Plan> = {
-  full: { countdown: 5, ascent: 8, space: 6, transit: 10, arrival: 6 }, // 35 s = FLIGHT_S
-  short: { countdown: 4, ascent: 5, space: 3, transit: 5, arrival: 3 }, // 20 s = FLIGHT_SHORT_S
+  // the countdown voice says "Liftoff!" at ~5 s
+  full: { countdown: 5.5, ascent: 8, space: 6, transit: 9.5, arrival: 6 }, // 35 s = FLIGHT_S
+  short: { countdown: 5.5, ascent: 4, space: 2.5, transit: 4.5, arrival: 3.5 }, // 20 s = FLIGHT_SHORT_S
 };
 
 function screenTexture(): { tex: THREE.CanvasTexture; draw: (rows: [string, string][], title: string) => void } {
@@ -75,6 +76,8 @@ export class Flight {
   private sky = createSkyDome(1900, false);
   private stars: THREE.Mesh;
   private near = new THREE.Group(); // pad, tower, ground (metres, scaled with altitude)
+  private cabin = new THREE.Group();
+  private cinemaOn = false;
   private earth: THREE.Sprite;
   private moon: THREE.Mesh;
   private sunGlow: THREE.Sprite;
@@ -160,7 +163,7 @@ export class Flight {
   }
 
   private buildCabin() {
-    const cabin = new THREE.Group();
+    const cabin = this.cabin;
     const shell = new THREE.MeshStandardMaterial({ color: 0x3a4250, roughness: 0.8, metalness: 0.2 });
     const trim = new THREE.MeshStandardMaterial({ color: 0x1b2028, roughness: 0.6 });
     // floor + low side consoles
@@ -215,6 +218,13 @@ export class Flight {
     plate.lookAt(0, SEAT_Y, 0);
     cabin.add(plate);
     this.scene.add(cabin);
+  }
+
+  /** Full-screen story in VR: hide the capsule and the world (black around the curved screen). */
+  setCinema(on: boolean) {
+    if (on === this.cinemaOn) return;
+    this.cinemaOn = on;
+    for (const o of [this.cabin, this.near, this.sky.mesh, this.stars, this.sunGlow]) o.visible = !on;
   }
 
   /** Sit in the capsule on the pad (waiting for the story / liftoff). */
@@ -302,7 +312,7 @@ export class Flight {
       // waiting on the pad (the story may play on the cinema screen: dusk-like sky)
       this.near.scale.setScalar(1);
       this.near.position.y = 0;
-      this.setAltitude(0.55 * this.dim);
+      this.setAltitude(0);
       return;
     }
     this.t += dt;
@@ -355,7 +365,7 @@ export class Flight {
       this.sky.mesh.visible = false;
       this.setAltitude(1);
       if (t < t3) this.say('inSpace');
-      else this.say('transit');
+      else if (P !== PLANS.short) this.say('transit'); // the short (pitch) flight keeps only the key lines
       if (!this.said.has('spacePad')) {
         this.said.add('spacePad');
         this.audio.score()?.space(t4 - t2 + P.arrival);

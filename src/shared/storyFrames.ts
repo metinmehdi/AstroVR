@@ -264,20 +264,20 @@ export class StoryCanvas {
     g.globalAlpha = Math.max(0, alpha);
     g.textAlign = 'center';
     g.textBaseline = 'middle';
-    g.font = `600 ${Math.round((this.letterbox ? 31 : 52) * k)}px system-ui, sans-serif`;
+    g.font = `600 ${Math.round((this.letterbox ? 31 : 44) * k)}px system-ui, sans-serif`;
     const words = text.split(' ');
     const lines: string[] = [];
     let line = '';
     for (const w of words) {
       const t = line ? `${line} ${w}` : w;
-      if (g.measureText(t).width > W * 0.88 && line) {
+      if (g.measureText(t).width > W * (this.letterbox ? 0.88 : 0.6) && line) {
         lines.push(line);
         line = w;
       } else line = t;
     }
     if (line) lines.push(line);
-    const lh = (this.letterbox ? 38 : 60) * k;
-    const cy = this.letterbox ? H - this.bar / 2 : H - 90 * k;
+    const lh = (this.letterbox ? 38 : 52) * k;
+    const cy = this.letterbox ? H - this.bar / 2 : H - 165 * k; // VR: a bit above the bottom of the curved screen
     if (!this.letterbox) {
       // dark band behind the subtitle so it reads on any picture
       g.fillStyle = 'rgba(0,0,0,0.6)';

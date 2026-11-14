@@ -21,6 +21,12 @@ const H = 900;
 const HAS_FILE: Record<Lang, Set<string>> = { en: new Set(available.en as string[]), az: new Set(available.az as string[]) };
 const ease = (u: number) => u * u * (3 - 2 * u);
 
+interface Voice {
+  buf?: AudioBuffer;
+  el?: HTMLAudioElement;
+  dur: number;
+}
+
 export interface StoryOptions {
   lang: Lang;
   record?: boolean;
@@ -48,6 +54,7 @@ export class StoryPlayer {
   private stopped = false;
   private timers: number[] = [];
   private vapor: THREE.Sprite[] = [];
+  private els: HTMLAudioElement[] = [];
 
   constructor(private opts: StoryOptions) {
     this.renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -66,8 +73,8 @@ export class StoryPlayer {
     (window as unknown as { __astrovrStory?: StoryPlayer }).__astrovrStory = this; // debug / still export
   }
 
-  /** Load assets (images, scenes, narration). */
-  private async prepare(): Promise<(AudioBuffer | null)[]> {
+  /** Load assets (images, scenes, narration). A line is a decoded buffer, or an <audio> element if decoding fails. */
+  private async prepare(): Promise<(Voice | null)[]> {
     void this.ctx.resume();
     this.sc.clear();
     await this.sc.load(false);
@@ -77,11 +84,20 @@ export class StoryPlayer {
     return Promise.all(
       SHOTS.map(async (s) => {
         if (!HAS_FILE[lang].has(s.line)) return null;
+        const url = `/audio/${lang}/${s.line}.mp3`;
         try {
-          const buf = await (await fetch(`/audio/${lang}/${s.line}.mp3`)).arrayBuffer();
-          return await this.ctx.decodeAudioData(buf);
+          const buf = await (await fetch(url)).arrayBuffer();
+          const b = await this.ctx.decodeAudioData(buf);
+          return { buf: b, dur: b.duration };
         } catch {
-          return null;
+          // some browsers cannot decode this MP3 in Web Audio: stream it through a media element instead
+          return await new Promise<Voice | null>((res) => {
+            const el = new Audio(url);
+            el.preload = 'auto';
+            el.onloadedmetadata = () => res({ el, dur: el.duration });
+            el.onerror = () => res(null);
+            setTimeout(() => res(null), 5000);
+          });
         }
       }),
     );
@@ -94,7 +110,7 @@ export class StoryPlayer {
     const lang = this.opts.lang;
     this.tl = storyTimeline(
       lang,
-      voices.map((v) => v?.duration ?? null),
+      voices.map((v) => v?.dur ?? null),
     );
     const tl = this.tl;
     const lead = 0.25;
@@ -104,14 +120,24 @@ export class StoryPlayer {
     SHOTS.forEach((s, i) => {
       const at = tl.starts[i] + (i === SHOTS.length - 1 ? 0.9 : 0.35);
       const v = voices[i];
-      if (v) {
+      if (v?.buf) {
         const src = this.ctx.createBufferSource();
-        src.buffer = v;
+        src.buffer = v.buf;
         const vg = this.ctx.createGain();
         vg.gain.value = 1.15;
         src.connect(vg).connect(this.master);
         src.start(a0 + at);
-        this.duck(a0 + at, v.duration);
+        this.duck(a0 + at, v.dur);
+      } else if (v?.el) {
+        const el = v.el;
+        this.els.push(el);
+        try {
+          this.ctx.createMediaElementSource(el).connect(this.master); // also recorded
+        } catch {
+          /* already connected */
+        }
+        this.timers.push(window.setTimeout(() => void el.play().catch(() => {}), (lead + at) * 1000));
+        this.duck(a0 + at, v.dur);
       } else {
         this.timers.push(window.setTimeout(() => this.speak(STORY[s.line][lang]), (lead + at) * 1000));
       }
@@ -189,6 +215,7 @@ export class StoryPlayer {
     cancelAnimationFrame(this.raf);
     this.timers.forEach(clearTimeout);
     if ('speechSynthesis' in window) speechSynthesis.cancel();
+    this.els.forEach((a) => a.pause());
     this.score.stop(0.4);
     setTimeout(() => void this.ctx.close(), 600);
     this.moon?.dispose();

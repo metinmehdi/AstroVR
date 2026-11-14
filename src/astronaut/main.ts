@@ -195,7 +195,7 @@ async function main() {
     moon.update(dt, state);
     syncFlight();
     storyVR.update(dt);
-    flight.dim = storyVR.level;
+    flight.setCinema(storyVR.level > 0.02); // full-view story: hide the capsule and the world
     flight.update(dt);
     mission.update(dt);
     stereo.render(flight.active ? flight.scene : moon.scene, camera);
