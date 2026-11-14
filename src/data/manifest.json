@@ -1,5 +1,5 @@
 {
- "generatedAt": "2026-11-14T10:22:59.936Z",
+ "generatedAt": "2026-11-14T10:38:00.878Z",
  "site": {
   "name": "Nobile Rim 1 (sunniest point)",
   "lat": -85.3003,
@@ -68,6 +68,20 @@
    "org": "NASA GSFC PGDA",
    "url": "https://pgda.gsfc.nasa.gov/products/78",
    "usedFor": "The ground you walk on is real Moon terrain measured by laser from orbit"
+  },
+  {
+   "id": "epic",
+   "name": "EPIC full-disk Earth photo, 2026-11-11 00:13:03",
+   "org": "NASA GSFC / NOAA DSCOVR",
+   "url": "https://epic.gsfc.nasa.gov/",
+   "usedFor": "The Earth you see in the lunar sky is a real photo of Earth"
+  },
+  {
+   "id": "donki-recent",
+   "name": "DONKI space-weather notifications, last 14 days",
+   "org": "NASA CCMC",
+   "url": "https://ccmc.gsfc.nasa.gov/tools/DONKI/",
+   "usedFor": "\"Today's real Sun\" panel (live API, this file is the offline cache)"
   },
   {
    "id": "diviner",
