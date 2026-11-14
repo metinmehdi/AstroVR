@@ -63,11 +63,15 @@ export const STORY: Lines = {
 /** Rocket flight (launch control, inside the capsule). */
 export const FLIGHT: Lines = {
   countdown: { en: 'Five. Four. Three. Two. One. Liftoff! We have liftoff!', az: 'Beş. Dörd. Üç. İki. Bir. Start! Raket havaya qalxdı!' },
-  inSpace: { en: 'Engines off. You are in space. Look to your left: that is our Earth.', az: 'Mühərriklər söndü. Kosmosdasan. Sola bax: bu, bizim Yerdir.' },
+  maxQ: { en: 'Max Q. The hardest push through the air. Hold on!', az: 'Maks Q. Havanın ən güclü təzyiqi. Möhkəm otur!' },
+  boosterSep: { en: 'Booster separation! Look out of the side window.', az: 'Bustərlər ayrıldı! Yan pəncərəyə bax.' },
+  meco: { en: 'Main engines off. You are weightless. Look at the toy!', az: 'Mühərriklər söndü. Çəkisizlikdəsən. Oyuncağa bax!' },
+  sunrise: { en: 'Look ahead: a sunrise from orbit.', az: 'Qarşıya bax: orbitdən Günəşin doğuşu.' },
   transit: {
-    en: 'Three days and three hundred eighty-four thousand kilometres to the Moon.',
-    az: 'Aya qədər üç günlük yol var: üç yüz səksən dörd min kilometr.',
+    en: 'Engine burn to the Moon. Three days and three hundred eighty-four thousand kilometres.',
+    az: 'Aya doğru mühərrik yandırılır. Üç günlük yol: üç yüz səksən dörd min kilometr.',
   },
+  earthrise: { en: 'Look: the Earth is rising over the Moon, just like Apollo 8 saw it.', az: 'Bax: Yer Ayın üstündən doğur, Apollo 8 kimi.' },
   arrival: { en: 'Moon arrival. Starting the descent to the south pole.', az: 'Aya çatdıq. Cənub qütbünə enməyə başlayırıq.' },
 };
 

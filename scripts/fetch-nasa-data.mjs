@@ -533,6 +533,32 @@ await step('Story images', async () => {
   );
 });
 
+// 13) Rocket-flight textures: NASA Blue Marble (SVS 2915) for the Earth seen from orbit, and the LRO colour map
+//     (CGI Moon Kit, SVS 4720) for the Moon on approach
+await step('Flight textures', async () => {
+  const items = [
+    { url: 'https://svs.gsfc.nasa.gov/vis/a000000/a002900/a002915/bluemarble-2048.png', file: 'public/textures/earth-bluemarble.png' }, // converted to earth-bluemarble.jpg (Python PIL, quality 86) for the web,
+    { url: 'https://svs.gsfc.nasa.gov/vis/a000000/a004700/a004720/lroc_color_2k.jpg', file: 'public/textures/moon-lroc-2k.jpg' },
+  ];
+  for (const it of items) await save(it.file, await get(it.url, 'buffer'));
+  manifest.push(
+    {
+      id: 'blue-marble',
+      name: 'NASA Blue Marble global Earth image (2048 × 1024)',
+      org: 'NASA Scientific Visualization Studio',
+      url: 'https://svs.gsfc.nasa.gov/2915',
+      usedFor: 'The Earth seen from the rocket window during ascent and in orbit',
+    },
+    {
+      id: 'moon-lroc-2k',
+      name: 'CGI Moon Kit: LRO LROC colour map of the Moon (2048 × 1024)',
+      org: 'NASA Scientific Visualization Studio',
+      url: 'https://svs.gsfc.nasa.gov/4720',
+      usedFor: 'The Moon seen from the rocket on approach and at arrival (Earthrise)',
+    },
+  );
+});
+
 // Facts read by the research agent from NASA documents (not fetched as data files)
 manifest.push(
   { id: 'diviner', name: 'LRO Diviner surface temperature at the site: average ~130 K, maximum ~236–263 K; permanently shadowed craters ~25–40 K', org: 'NASA LRO Diviner (PDS Polar Resource Product)', url: 'https://pds-geosciences.wustl.edu/lro/urn-nasa-pds-lro_diviner_derived1/', usedFor: 'Reference fact shown in the science notes (not yet in the game mechanics)' },

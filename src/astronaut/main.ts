@@ -105,6 +105,7 @@ async function main() {
   // the story intro on a cinema screen in the capsule (same timeline as the projector), SKIP by gaze
   const storyVR = new StoryVR(mission.gazeInput, () => transport.sendAction({ kind: 'skipStory' }), () => lang);
   flight.scene.add(storyVR.group);
+  if (params.has('debug')) Object.assign(window as object, { astrovrFlight: flight });
   let started = false;
   const skipFlight = params.get('intro') === '0';
   const syncFlight = () => {
@@ -151,6 +152,7 @@ async function main() {
 
   startBtn.onclick = async () => {
     mission.audio.unlock(); // must happen inside the tap
+    flight.primeVideo(); // the real window film may then play without another gesture
     await requestOrientationPermission();
     try {
       await document.documentElement.requestFullscreen?.();
@@ -197,6 +199,7 @@ async function main() {
     storyVR.update(dt);
     flight.setCinema(storyVR.level > 0.02); // full-view story: hide the capsule and the world
     flight.update(dt);
+    lamp.visible = !flight.active; // the helmet lamp is for the polar shadows, not inside the capsule
     mission.update(dt);
     stereo.render(flight.active ? flight.scene : moon.scene, camera);
     mirrorTap.capture(renderer.domElement, stereo.enabled, now);

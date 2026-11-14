@@ -1,0 +1,142 @@
+{
+ "video": "/video/flight-film.mp4",
+ "roar": "/audio/fx/launch-roar.mp3",
+ "full": {
+  "offset": 0,
+  "length": 30.467,
+  "segments": [
+   {
+    "source": "rocketcam",
+    "from": 5,
+    "to": 11,
+    "speed": 1,
+    "what": "SLS solid rocket boosters separate (rocket camera, night launch)",
+    "at": 0,
+    "dur": 6
+   },
+   {
+    "source": "highlights",
+    "from": 25,
+    "to": 27.4,
+    "speed": 1,
+    "what": "Orion's first view of Earth (crescent)",
+    "at": 6,
+    "dur": 2.4
+   },
+   {
+    "source": "highlights",
+    "from": 28,
+    "to": 30.8,
+    "speed": 1,
+    "what": "Orion's first view of Earth",
+    "at": 8.4,
+    "dur": 2.8
+   },
+   {
+    "source": "highlights",
+    "from": 42.2,
+    "to": 44,
+    "speed": 0.5,
+    "what": "Approaching the Moon (Orion camera)",
+    "at": 11.2,
+    "dur": 3.6
+   },
+   {
+    "source": "highlights",
+    "from": 44,
+    "to": 46,
+    "speed": 0.5,
+    "what": "Lunar surface during the flyby (Orion camera)",
+    "at": 14.8,
+    "dur": 4
+   },
+   {
+    "source": "highlights",
+    "from": 46,
+    "to": 50,
+    "speed": 0.6,
+    "what": "Earthrise seen from Orion",
+    "at": 18.8,
+    "dur": 6.667
+   },
+   {
+    "source": "highlights",
+    "from": 50.5,
+    "to": 55.5,
+    "speed": 1,
+    "what": "The Moon beyond Orion's solar array",
+    "at": 25.467,
+    "dur": 5
+   }
+  ]
+ },
+ "short": {
+  "offset": 30.467,
+  "length": 16,
+  "segments": [
+   {
+    "source": "rocketcam",
+    "from": 5,
+    "to": 9,
+    "speed": 1,
+    "what": "SLS solid rocket boosters separate",
+    "at": 0,
+    "dur": 4
+   },
+   {
+    "source": "highlights",
+    "from": 28,
+    "to": 31,
+    "speed": 1,
+    "what": "Orion's first view of Earth",
+    "at": 4,
+    "dur": 3
+   },
+   {
+    "source": "highlights",
+    "from": 44,
+    "to": 46,
+    "speed": 1,
+    "what": "Lunar surface during the flyby",
+    "at": 7,
+    "dur": 2
+   },
+   {
+    "source": "highlights",
+    "from": 46,
+    "to": 50,
+    "speed": 0.8,
+    "what": "Earthrise seen from Orion",
+    "at": 9,
+    "dur": 5
+   },
+   {
+    "source": "highlights",
+    "from": 50.5,
+    "to": 52.5,
+    "speed": 1,
+    "what": "The Moon beyond Orion's solar array",
+    "at": 14,
+    "dur": 2
+   }
+  ]
+ },
+ "sources": [
+  {
+   "nasaId": "Artemis I - Rocket Camera Footage",
+   "title": "Artemis I Rocket Camera Footage of Ascent (2022)",
+   "url": "https://images-assets.nasa.gov/video/Artemis%20I%20-%20Rocket%20Camera%20Footage/Artemis%20I%20-%20Rocket%20Camera%20Footage~large.mp4"
+  },
+  {
+   "nasaId": "Highlights From the First 13 Days of NASA's Artemis I Moon Mission",
+   "title": "Highlights From the First 13 Days of NASA's Artemis I Moon Mission (2022)",
+   "url": "https://images-assets.nasa.gov/video/Highlights%20From%20the%20First%2013%20Days%20of%20NASA's%20Artemis%20I%20Moon%20Mission/Highlights%20From%20the%20First%2013%20Days%20of%20NASA's%20Artemis%20I%20Moon%20Mission~large.mp4"
+  },
+  {
+   "nasaId": "KSC-20260401-AU-LMM01-0001-Artemis_II_Live_Launch_Coverage_Pad_Camera_Site_4",
+   "title": "Artemis II Live Launch Coverage - Pad Camera Site 4 (SLS liftoff sound, 1 Apr 2026)",
+   "url": "https://images-assets.nasa.gov/audio/KSC-20260401-AU-LMM01-0001-Artemis_II_Live_Launch_Coverage_Pad_Camera_Site_4/KSC-20260401-AU-LMM01-0001-Artemis_II_Live_Launch_Coverage_Pad_Camera_Site_4~orig.wav"
+  }
+ ],
+ "note": "Real NASA footage (public domain). Captions, timestamps and NASA insignia cropped out."
+}

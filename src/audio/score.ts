@@ -121,7 +121,7 @@ export class Score {
   }
 
   /** cinematic hit: falling sub sine + filtered noise burst */
-  hit(t: number, size = 1) {
+  hit(t = this.ctx.currentTime + 0.01, size = 1) {
     const ctx = this.ctx;
     const o = this.track(ctx.createOscillator());
     o.frequency.setValueAtTime(110, t);
@@ -283,6 +283,75 @@ export class Score {
     o.start(startAt);
     o.stop(startAt + durS + 0.1);
     this.hit(startAt, 1.2);
+  }
+
+  /**
+   * A steerable rocket engine: deep brown-noise roar + sub rumble + crackle, felt through the capsule.
+   * set(level) ramps the thrust (0..1), buffet() adds the Max-Q shaking, cut() is a hard engine cutoff (MECO):
+   * in vacuum the roar simply stops.
+   */
+  engine(startAt = this.ctx.currentTime + 0.02) {
+    const ctx = this.ctx;
+    const roar = this.track(ctx.createBufferSource());
+    roar.buffer = this.noise;
+    roar.loop = true;
+    const lp = ctx.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.frequency.value = 200;
+    const main = ctx.createGain();
+    main.gain.value = 0;
+    roar.connect(lp).connect(main);
+    const crackle = this.track(ctx.createBufferSource());
+    crackle.buffer = this.noise;
+    crackle.loop = true;
+    const bp = ctx.createBiquadFilter();
+    bp.type = 'bandpass';
+    bp.frequency.value = 1400;
+    bp.Q.value = 0.8;
+    const cg = ctx.createGain();
+    cg.gain.value = 0;
+    crackle.connect(bp).connect(cg);
+    const sub = this.track(ctx.createOscillator());
+    sub.frequency.value = 34;
+    const sg = ctx.createGain();
+    sg.gain.value = 0;
+    sub.connect(sg);
+    // buffeting: a slow random-ish tremolo on the roar
+    const lfo = this.track(ctx.createOscillator());
+    lfo.frequency.value = 7;
+    const lfoDepth = ctx.createGain();
+    lfoDepth.gain.value = 0;
+    lfo.connect(lfoDepth).connect(main.gain);
+    this.bus(main, 0.2);
+    this.bus(cg, 0.15);
+    this.bus(sg, 0.05);
+    for (const n of [roar, crackle, sub, lfo]) n.start(startAt);
+    let level = 0;
+    return {
+      set: (v: number, ramp = 0.6) => {
+        level = v;
+        const t = ctx.currentTime;
+        main.gain.setTargetAtTime(1.1 * v, t, ramp / 3);
+        cg.gain.setTargetAtTime(0.35 * v * v, t, ramp / 3);
+        sg.gain.setTargetAtTime(0.55 * v, t, ramp / 3);
+        lp.frequency.setTargetAtTime(160 + 900 * v, t, ramp / 3);
+      },
+      buffet: (on: boolean) => lfoDepth.gain.setTargetAtTime(on ? 0.45 * Math.max(0.3, level) : 0, ctx.currentTime, 0.2),
+      cut: () => {
+        const t = ctx.currentTime;
+        for (const g of [main.gain, cg.gain, sg.gain, lfoDepth.gain]) {
+          g.cancelScheduledValues(t);
+          g.setValueAtTime(g.value, t);
+          g.linearRampToValueAtTime(0, t + 0.12);
+        }
+        for (const n of [roar, crackle, sub, lfo]) n.stop(t + 0.2);
+      },
+    };
+  }
+
+  /** A sustained chord swell (cinematic moments: sunrise, Earthrise). */
+  swell(notes: string[], dur: number, level = 0.3, startAt = this.ctx.currentTime + 0.05) {
+    this.pad(notes, startAt, dur, level, 0.7);
   }
 
   /** Quiet space pad for the coast + a swell on arrival. */

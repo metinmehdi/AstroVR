@@ -1,5 +1,5 @@
 {
- "generatedAt": "2026-11-14T16:06:52.385Z",
+ "generatedAt": "2026-11-14T18:25:13.380Z",
  "site": {
   "name": "Nobile Rim 1 (sunniest point)",
   "lat": -85.3003,
@@ -105,6 +105,20 @@
    "usedFor": "Story intro: \"a storm is waking up\" is the real flare that starts the game's storm"
   },
   {
+   "id": "blue-marble",
+   "name": "NASA Blue Marble global Earth image (2048 × 1024)",
+   "org": "NASA Scientific Visualization Studio",
+   "url": "https://svs.gsfc.nasa.gov/2915",
+   "usedFor": "The Earth seen from the rocket window during ascent and in orbit"
+  },
+  {
+   "id": "moon-lroc-2k",
+   "name": "CGI Moon Kit: LRO LROC colour map of the Moon (2048 × 1024)",
+   "org": "NASA Scientific Visualization Studio",
+   "url": "https://svs.gsfc.nasa.gov/4720",
+   "usedFor": "The Moon seen from the rocket on approach and at arrival (Earthrise)"
+  },
+  {
    "id": "diviner",
    "name": "LRO Diviner surface temperature at the site: average ~130 K, maximum ~236–263 K; permanently shadowed craters ~25–40 K",
    "org": "NASA LRO Diviner (PDS Polar Resource Product)",
@@ -145,6 +159,20 @@
    "org": "NASA OSDR",
    "url": "https://osdr.nasa.gov/bio/repo/data/studies/OSD-476",
    "usedFor": "Greenhouse stress mechanic"
+  },
+  {
+   "id": "artemis1-footage",
+   "name": "NASA Artemis I real footage (2022): SLS rocket-camera booster separation; Orion cameras: first views of Earth, the Moon, lunar flyby, Earthrise",
+   "org": "NASA (Image and Video Library)",
+   "url": "https://images.nasa.gov/",
+   "usedFor": "The view through the capsule windows during the rocket flight, and the projector film (captions, timestamps and NASA insignia cropped out)"
+  },
+  {
+   "id": "artemis2-padmic",
+   "name": "NASA Artemis II launch-pad microphone recording (Pad Camera Site 4, 1 Apr 2026): the real SLS liftoff roar",
+   "org": "NASA (Image and Video Library)",
+   "url": "https://images.nasa.gov/",
+   "usedFor": "The launch sound from ignition to engine cutoff (silence after: no sound in vacuum)"
   }
  ]
 }

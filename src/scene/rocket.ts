@@ -147,15 +147,18 @@ export function createPadGround(radius = 1500): THREE.Mesh {
  * Sky dome whose colour follows altitude: 0 = Earth day sky (or dawn), 1 = the black of space.
  * Unlit shader, so it works in any scene.
  */
-export function createSkyDome(radius = 900, dawn = false): { mesh: THREE.Mesh; setAltitude: (a: number) => void } {
+export function createSkyDome(radius = 900, mode: boolean | 'day' | 'dawn' | 'night' = false): { mesh: THREE.Mesh; setAltitude: (a: number) => void } {
+  const m = mode === true ? 'dawn' : mode === false ? 'day' : mode;
+  const H = { day: 0xbcd8f2, dawn: 0xffa25c, night: 0x1a2236 }[m];
+  const Z = { day: 0x2f6fc4, dawn: 0x1d3a72, night: 0x020309 }[m];
   const mat = new THREE.ShaderMaterial({
     side: THREE.BackSide,
     depthWrite: false,
     transparent: true,
     uniforms: {
       alt: { value: 0 },
-      horizonCol: { value: new THREE.Color(dawn ? 0xffa25c : 0xbcd8f2) },
-      zenithCol: { value: new THREE.Color(dawn ? 0x1d3a72 : 0x2f6fc4) },
+      horizonCol: { value: new THREE.Color(H) },
+      zenithCol: { value: new THREE.Color(Z) },
     },
     vertexShader: `varying vec3 vDir; void main(){ vDir = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
     fragmentShader: `

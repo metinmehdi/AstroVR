@@ -32,7 +32,9 @@ export type ControlCommand =
   /** after the story intro: the rocket lifts off (short = 20 s pitch version) */
   | { kind: 'launch'; short?: boolean }
   /** story intro started (with its timeline) or ended on Mission Control */
-  | { kind: 'story'; play: boolean; id?: string; starts?: number[]; durs?: number[] };
+  | { kind: 'story'; play: boolean; id?: string; starts?: number[]; durs?: number[] }
+  /** operator / tests: no rocket flight this time */
+  | { kind: 'skipFlight' };
 
 const SITES: SiteId[] = ['siteA', 'siteB'];
 
@@ -267,6 +269,9 @@ export function applyControl(s: SimState, cmd: ControlCommand, scenario?: Scenar
         setPhase(s, 'briefing');
         s.flight = { status: 'pad', short: false, at: s.t }; // the cadet waits in the capsule during the story
       }
+      return;
+    case 'skipFlight':
+      if (s.flight && s.flight.status !== 'landed') s.flight = { ...s.flight, status: 'landed', at: s.t };
       return;
     case 'story':
       s.story = cmd.play && cmd.id ? { id: cmd.id, starts: cmd.starts ?? [], durs: cmd.durs ?? [] } : null;

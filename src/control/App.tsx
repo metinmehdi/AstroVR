@@ -6,6 +6,7 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { StoryIntro } from './StoryIntro';
+import { FlightFilm } from './FlightFilm';
 import QRCode from 'qrcode';
 import { createTransport, type Transport } from '../shared/transport';
 import { astronautUrl, makeId, makeRoomCode, STATE_PUBLISH_HZ } from '../shared/protocol';
@@ -217,7 +218,8 @@ export function App() {
         ready={ready}
         onStart={() => {
           cmd({ kind: 'start' }); // the cadet waits in the capsule on the pad
-          if (storyOn) setStory('start');
+          if (urlFlags.get('flight') === '0') cmd({ kind: 'skipFlight' });
+          else if (storyOn) setStory('start');
           else cmd({ kind: 'launch', short: shortFlight });
         }}
         story={{
@@ -306,6 +308,7 @@ export function App() {
       {header}
       {showData && <NasaDataPanel lang={lang} onClose={() => setShowData(false)} />}
       {body}
+      {s.flight?.status === 'flying' && !story && <FlightFilm state={s} stream={stream} poseRef={poseRef} lang={lang} />}
       {story && (
         <StoryIntro
           lang={lang}
