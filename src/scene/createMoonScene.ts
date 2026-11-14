@@ -108,7 +108,8 @@ export function createMoonScene(scenario: Scenario, quality: Quality = 'low'): M
   starTex.colorSpace = THREE.SRGBColorSpace;
   const skyGeo = new THREE.SphereGeometry(950, 48, 32);
   skyGeo.scale(-1, 1, 1);
-  const sky = new THREE.Mesh(skyGeo, new THREE.MeshBasicMaterial({ map: starTex, color: 0x6a6a6a, depthWrite: false, fog: false }) // darker: airless black sky);
+  // tinted darker: the airless lunar sky is black
+  const sky = new THREE.Mesh(skyGeo, new THREE.MeshBasicMaterial({ map: starTex, color: 0x6a6a6a, depthWrite: false, fog: false }));
   sky.quaternion.setFromUnitVectors(skyDirFromRaDec(90, -66.56), new THREE.Vector3(0, 1, 0));
   sky.renderOrder = -1;
   scene.add(sky);
