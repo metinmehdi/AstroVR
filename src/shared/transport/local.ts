@@ -9,6 +9,7 @@ type Packet =
   | { t: 'pose'; v: AstronautPose }
   | { t: 'action'; v: ActionEnvelope }
   | { t: 'radio'; v: RadioMessage };
+type DataPacket = Exclude<Packet, { t: 'hello' }>;
 
 /**
  * Same-browser transport (two tabs/windows) for development without Firebase.
@@ -44,9 +45,10 @@ export class LocalTransport implements Transport {
     this.listeners.forEach((l) => l(p));
   }
 
-  private on<T extends Packet['t']>(t: T, cb: (v: Extract<Packet, { t: T }>['v']) => void): Unsub {
+  private on<T extends DataPacket['t']>(t: T, cb: (v: Extract<DataPacket, { t: T }>['v']) => void): Unsub {
+    const handler = cb as (v: unknown) => void;
     const l = (p: Packet) => {
-      if (p.t === t) cb((p as Extract<Packet, { t: T }>).v);
+      if (p.t === t) handler((p as DataPacket).v);
     };
     this.listeners.add(l);
     return () => this.listeners.delete(l);

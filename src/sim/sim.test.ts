@@ -63,10 +63,11 @@ describe('radiation trade-offs (real anchors)', () => {
     walk(open, ['base', 'a1']);
     applyControl(shelter, { kind: 'switch', key: 'shelter', on: true });
     applyControl(shelter, { kind: 'switch', key: 'greenhouse', on: false }); // keep the battery alive
-    // run both into the storm
+    // run both into the storm (before 75 s after warning, when a sheltered crew ends the crisis)
     for (const s of [open, shelter]) {
-      run(s, SC.timeline.sepWarningAfterEvaS + 85, 0.5);
+      run(s, SC.timeline.sepWarningAfterEvaS + 72, 0.5);
     }
+    expect(shelter.sep.active).toBe(true);
     const ratio = shelter.dose.rateMGyPerH / open.dose.rateMGyPerH;
     expect(ratio).toBeCloseTo(C.SHELTER_FACTOR_POWERED, 1);
   });
