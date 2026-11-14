@@ -56,4 +56,4 @@ Copy `.env.example` → `.env.local` and set the Supabase URL + anon key (Realti
 - Space Agency Partner: CSA food-production toolkit
 
 ## Use of AI
-AI tools (Claude Code, Codex) assisted with research and code. Voice lines are AI text-to-speech (OpenAI) when generated, otherwise the browser's built-in voice. No AI-generated images are used. The mission concept and design decisions are the team's own.
+AI tools (Claude Code, Codex) assisted with research and code. Voice lines are AI text-to-speech (Google Gemini TTS, pre-generated); a missing file is shown as a caption only. No AI-generated images are used. The mission concept and design decisions are the team's own.

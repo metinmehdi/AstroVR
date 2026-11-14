@@ -161,6 +161,13 @@
    "usedFor": "Greenhouse stress mechanic"
   },
   {
+   "id": "orion-cabin-360",
+   "name": "NASA 360° photo of the Artemis I Orion crew module (KSC-20220808-PH-FMX02_0002, NASA/Frank Michaux, 8 Aug 2022)",
+   "org": "NASA (Image and Video Library)",
+   "url": "https://images.nasa.gov/details/KSC-20220808-PH-FMX02_0002",
+   "usedFor": "The capsule interior in VR during the rocket flight (window covers and the open hatch cut out so the real footage shows through)"
+  },
+  {
    "id": "artemis1-footage",
    "name": "NASA Artemis I real footage (2022): SLS rocket-camera booster separation; Orion cameras: first views of Earth, the Moon, lunar flyby, Earthrise",
    "org": "NASA (Image and Video Library)",
