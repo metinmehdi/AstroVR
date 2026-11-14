@@ -55,6 +55,12 @@ export class HeadTracker {
     this.gamma = e.gamma ?? 0;
   };
 
+  /** Debug/testing (no gyroscope): look toward yaw/pitch in radians. */
+  debugLook(yaw: number, pitch: number) {
+    this.mouseYaw = yaw;
+    this.mousePitch = pitch;
+  }
+
   /** Make the current heading "forward" (call when the phone goes into the VR box). */
   recenter() {
     this.yawOffset = THREE.MathUtils.degToRad(this.alpha);

@@ -15,6 +15,7 @@ import { HeadTracker, requestOrientationPermission } from './orientation';
 import { StereoRenderer } from './stereo';
 import { AstronautMission } from './mission';
 import { addVisor } from './visor';
+import { startMirrorSender } from '../shared/rtc';
 
 const params = new URLSearchParams(location.search);
 const quality: Quality = params.get('q') === 'high' ? 'high' : 'low';
@@ -51,6 +52,8 @@ async function main() {
   renderer.setPixelRatio(Math.min(devicePixelRatio, quality === 'high' ? 2 : 1.5));
   renderer.setSize(innerWidth, innerHeight);
   renderer.shadowMap.enabled = true;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.3;
   renderer.shadowMap.type = THREE.PCFShadowMap;
   document.body.appendChild(renderer.domElement);
 
@@ -77,7 +80,8 @@ async function main() {
     getLang: () => lang,
   });
 
-  if (params.has('debug')) (window as unknown as { astrovr: AstronautMission }).astrovr = mission;
+  const head = new HeadTracker(camera);
+  if (params.has('debug')) Object.assign(window as object, { astrovr: mission, astrovrHead: head, astrovrRenderer: renderer, astrovrSun: moon.sun });
 
   transport.onMeta((m) => {
     if (m && m.lang !== lang) {
@@ -94,7 +98,6 @@ async function main() {
     setTimeout(() => mission.onRadio(msg), COMM_DELAY_MS);
   });
 
-  const head = new HeadTracker(camera);
   const stereo = new StereoRenderer(renderer);
   stereo.enabled = params.get('mono') !== '1';
 
@@ -125,6 +128,8 @@ async function main() {
     overlay.hidden = true;
     setTimeout(() => head.recenter(), 1500); // time to slide the phone into the box
     transport.sendAction({ kind: 'ready' });
+    // live mirror: Mission Control sees exactly this canvas (UI, visor, everything)
+    startMirrorSender(transport, renderer.domElement);
   };
   loaded = true;
   startBtn.disabled = false;

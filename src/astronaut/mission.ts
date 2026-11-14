@@ -10,6 +10,9 @@ import type { ChecklistItem, Lang, RadioMessage, Scenario, SimState, SiteId, Sto
 import { SuitAudio } from '../audio/engine';
 import { RADIO, SUIT, lineText } from '../audio/lines';
 import { Gaze } from './gaze';
+import { Guide } from './guide';
+import { currentObjective } from '../shared/objective';
+import { evaClock } from '../shared/protocol';
 import { faceCamera, makeButton, WristPanel, type Button3D } from './ui3d';
 
 const EYE = 1.65;
@@ -46,9 +49,13 @@ export class AstronautMission {
   private stormButtons: THREE.Object3D[] = [];
   private sampleUI = new Map<SiteId, { photo: Button3D; collect: Button3D; mark: Button3D }>();
   private beacons = new Map<string, Button3D>();
+  private guide: Guide;
+  private wristAcc = 0;
 
   constructor(private c: Ctx) {
     this.gaze = new Gaze(c.camera);
+    this.guide = new Guide(c.scene, c.camera, (x, z) => c.terrainHeight(x, z));
+    window.addEventListener('astrovr:step', () => this.audio.chime());
     this.wrist = new WristPanel(c.camera, c.rig);
     c.scene.add(this.ui);
     this.vignette = new THREE.Mesh(
@@ -58,7 +65,6 @@ export class AstronautMission {
     this.vignette.renderOrder = 998;
     c.camera.add(this.vignette);
     window.addEventListener('astrovr:select', () => this.audio.tick());
-    this.buildAirlock();
     this.buildChecklist();
     this.buildRouteBeacons();
     this.buildSamples();
@@ -81,32 +87,6 @@ export class AstronautMission {
     const w = this.wp(id);
     this.c.rig.position.set(w.x, this.ground(w.x, w.z) + EYE, w.z);
     this.localWp = id;
-  }
-
-  /* ---------------------------------------------------------------- airlock = storm shelter */
-  private buildAirlock() {
-    const w = this.wp('airlock');
-    const y0 = this.ground(w.x, w.z);
-    const g = new THREE.Group();
-    g.position.set(w.x, y0, w.z);
-    const mat = new THREE.MeshStandardMaterial({ color: 0xc9ccd1, roughness: 0.6, metalness: 0.3, side: THREE.DoubleSide });
-    // wall with a wide window facing north (az ~288..72 deg): the hatch side, the low Sun (~57 deg) and Earth (~318 deg)
-    const wall = new THREE.Mesh(new THREE.CylinderGeometry(2.4, 2.4, 2.8, 48, 1, true, Math.PI * 1.4, Math.PI * 1.2), mat);
-    wall.position.y = 1.4;
-    wall.castShadow = true;
-    const floor = new THREE.Mesh(new THREE.CircleGeometry(2.4, 48), new THREE.MeshStandardMaterial({ color: 0x3b4048, roughness: 0.9 }));
-    floor.rotation.x = -Math.PI / 2;
-    floor.position.y = 0.02;
-    const roof = new THREE.Mesh(new THREE.CircleGeometry(2.45, 48), mat);
-    roof.rotation.x = Math.PI / 2;
-    roof.position.y = 2.8;
-    const glass = new THREE.Mesh(
-      new THREE.CylinderGeometry(2.38, 2.38, 2.6, 24, 1, true, Math.PI * 0.6, Math.PI * 0.8),
-      new THREE.MeshPhysicalMaterial({ color: 0x9fc7ff, transparent: true, opacity: 0.12, roughness: 0, side: THREE.DoubleSide }),
-    );
-    glass.position.y = 1.4;
-    g.add(wall, floor, roof, glass);
-    this.c.scene.add(g);
   }
 
   /* ---------------------------------------------------------------- 2. preparation checklist */
@@ -292,6 +272,7 @@ export class AstronautMission {
   onRadio(msg: RadioMessage) {
     const lang = this.c.getLang();
     void this.audio.radio(msg.type, lineText(RADIO, msg.type, lang));
+    this.guide.say(lineText(RADIO, msg.type, lang));
     this.clearCopy();
     const btn = makeButton('✅', 'COPY', '#3ddc84', 0.7);
     btn.mesh.name = 'copy';
@@ -373,6 +354,9 @@ export class AstronautMission {
   debugWaypoint() {
     return this.localWp;
   }
+  debugPlace(id: string) {
+    this.placeRig(id);
+  }
 
   /* ---------------------------------------------------------------- per frame */
   relabel() {
@@ -409,18 +393,28 @@ export class AstronautMission {
     }
     this.updateLope(dt);
 
-    // beacons: show neighbours of where we stand during EVA
-    const eva = s && (s.phase === 'surface' || s.phase === 'crisis');
-    // shelter rule: once the storm warning is out, a crew in the airlock stays inside until the debrief
-    const sheltered = Boolean(s?.sep.warning) && this.localWp === 'airlock';
-    const nb = eva && !this.lope && !sheltered ? this.neighbours(this.localWp) : [];
-    for (const [id, b] of this.beacons) b.mesh.visible = nb.includes(id);
-    // checklist stations visible in the airlock before EVA
-    for (const o of this.ui.children) {
-      if (o.name.startsWith('check:')) o.visible = Boolean(s && (s.phase === 'briefing' || s.phase === 'prep')) && this.checkVisible(o.name.slice(6) as ChecklistItem);
+    // ---- guidance: the ONE thing to do now (same objective logic as Mission Control)
+    const local = s ? { ...s, astronaut: { ...s.astronaut, waypointId: this.localWp } } : null;
+    const obj = currentObjective(local, {
+      radioCheckPending: this.pendingCopy?.msg.type === 'radioCheck',
+      routes: this.c.scenario.routes,
+    });
+    const active = new Set(this.lope ? [] : obj.targets);
+    for (const o of this.buttons) {
+      if (o.name.startsWith('check:') || o.name.startsWith('wp:') || o.name.startsWith('sample:')) o.visible = active.has(o.name);
     }
-    // sample buttons
-    for (const [siteId, ui] of this.sampleUI) for (const b of [ui.photo, ui.collect, ui.mark]) b.mesh.visible = !this.lope && this.localWp === siteId;
+    this.guide.setLang(lang);
+    this.guide.setObjective(obj, [...this.buttons].filter((o) => active.has(o.name)));
+    if (s) {
+      this.guide.setVitals({
+        o2: s.o2.suitPct,
+        dose: s.dose.totalMGy,
+        doseBudgetPct: s.dose.budgetPct,
+        clock: evaClock(s.evaStartedAt === null ? 0 : s.t - s.evaStartedAt),
+        storm: s.sep.warning && s.phase !== 'debrief',
+      });
+    }
+    this.guide.update(dt, Boolean(this.lope));
     // radio copy expiry
     if (this.pendingCopy && performance.now() > this.pendingCopy.until) this.clearCopy();
 
@@ -429,18 +423,16 @@ export class AstronautMission {
     this.gaze.update(dt);
 
     // wrist + audio
-    if (s) {
+    this.wristAcc += dt;
+    if (s && this.wristAcc > 0.25) {
+      this.wristAcc = 0;
       const task = this.taskText(s);
       this.wrist.draw(s.o2.suitPct, s.o2.walkbackMarginPct, s.dose.totalMGy, s.dose.budgetPct, s.dose.rateMGyPerH, task);
+    }
+    if (s) {
       const stress = Math.min(1, (s.sep.active ? 0.5 : 0) + (s.o2.walkbackMarginPct < 15 ? 0.3 : 0) + s.dose.budgetPct / 200);
       this.audio.update(s.dose.rateMGyPerH, stress);
     }
-  }
-
-  private checkVisible(item: ChecklistItem) {
-    const s = this.c.getState();
-    if (!s || s.checklist[item]) return false;
-    return item === 'lookTraining' || s.checklist.lookTraining;
   }
 
   private taskText(s: SimState): string {

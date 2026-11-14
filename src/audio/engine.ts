@@ -136,6 +136,14 @@ export class SuitAudio {
     this.thump(this.ctx.currentTime, 70, 0.35);
   }
 
+  /** Two rising tones when a mission step is completed. */
+  chime() {
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+    this.tone(t, 880, 0.12, 0.09);
+    this.tone(t + 0.12, 1320, 0.18, 0.09);
+  }
+
   /** Short UI tick for gaze selections. */
   tick() {
     if (!this.ctx) return;

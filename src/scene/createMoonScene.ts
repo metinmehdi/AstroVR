@@ -12,6 +12,7 @@ import * as THREE from 'three';
 import type { Scenario, SimState } from '../shared/types';
 import { MISSION_SKY } from '../shared/realdata';
 import terrain from '../data/terrain-nobile.json';
+import { createOutpost } from './outpost';
 
 export type Quality = 'low' | 'high';
 
@@ -115,10 +116,122 @@ function regolithTexture(): THREE.CanvasTexture {
   return t;
 }
 
+
+/** Small text label floating just above a sky direction. */
+function skyLabel(text: string, dir: THREE.Vector3, dist: number, degAbove: number): THREE.Sprite {
+  const c = document.createElement('canvas');
+  c.width = 512;
+  c.height = 96;
+  const g = c.getContext('2d')!;
+  g.font = '600 52px system-ui, "Segoe UI Emoji", sans-serif';
+  g.textAlign = 'center';
+  g.textBaseline = 'middle';
+  g.fillStyle = 'rgba(255,255,255,0.85)';
+  g.fillText(text, 256, 48);
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false }));
+  const h = 2 * dist * Math.tan(THREE.MathUtils.degToRad(0.9));
+  s.scale.set(h * 5.3, h, 1);
+  const up = dir.clone();
+  up.y += Math.tan(THREE.MathUtils.degToRad(degAbove));
+  s.position.copy(up.normalize()).multiplyScalar(dist);
+  return s;
+}
+
+/** Soft radial glow texture (sun glare, Earth halo). */
+function glowTexture(rgb: string): THREE.CanvasTexture {
+  const c = document.createElement('canvas');
+  c.width = c.height = 128;
+  const g = c.getContext('2d')!;
+  const grad = g.createRadialGradient(64, 64, 0, 64, 64, 64);
+  grad.addColorStop(0, 'rgba(' + rgb + ',1)');
+  grad.addColorStop(0.15, 'rgba(' + rgb + ',0.55)');
+  grad.addColorStop(0.45, 'rgba(' + rgb + ',0.12)');
+  grad.addColorStop(1, 'rgba(' + rgb + ',0)');
+  g.fillStyle = grad;
+  g.fillRect(0, 0, 128, 128);
+  return new THREE.CanvasTexture(c);
+}
+
+/**
+ * Earth's phase as seen from the Moon: illuminated fraction k = (1 - cos E)/2, E = Sun-Earth elongation in the lunar
+ * sky (both directions from JPL Horizons). The lit limb faces the Sun's direction projected onto the sky.
+ */
+function drawEarthPhase(c: HTMLCanvasElement, img: HTMLImageElement, sunDir: THREE.Vector3, earthDir: THREE.Vector3) {
+  const g = c.getContext('2d')!;
+  const R = c.width / 2;
+  g.clearRect(0, 0, c.width, c.height);
+  g.save();
+  g.beginPath();
+  g.arc(R, R, R * 0.98, 0, Math.PI * 2);
+  g.clip();
+  g.drawImage(img, 0, 0, c.width, c.height);
+  g.restore();
+  const E = sunDir.angleTo(earthDir);
+  const k = (1 - Math.cos(E)) / 2;
+  const right = new THREE.Vector3().crossVectors(earthDir, new THREE.Vector3(0, 1, 0)).normalize();
+  const up = new THREE.Vector3().crossVectors(right, earthDir).normalize();
+  const theta = Math.atan2(-sunDir.dot(up), sunDir.dot(right)); // canvas y grows downward
+  g.save();
+  g.translate(R, R);
+  g.rotate(theta); // +x now points toward the Sun
+  g.fillStyle = 'rgba(2,4,10,0.94)';
+  const rx = Math.abs(1 - 2 * k) * R;
+  g.beginPath();
+  g.arc(0, 0, R, Math.PI / 2, (3 * Math.PI) / 2);
+  // gibbous: subtract a lit ellipse from the night half; crescent: add a dark ellipse on the Sun side
+  g.ellipse(0, 0, rx, R, 0, (3 * Math.PI) / 2, Math.PI / 2, k >= 0.5);
+  g.fill();
+  g.restore();
+}
+
+/** Scattered rocks with an instanced mesh; deterministic, off the routes and the outpost area. */
+function createRocks(heightAt: (x: number, z: number) => number, scenario: Scenario, quality: Quality): THREE.InstancedMesh {
+  const count = quality === 'high' ? 700 : 420;
+  const geo = new THREE.DodecahedronGeometry(1, 0);
+  const mat = new THREE.MeshStandardMaterial({ color: 0x8a857e, roughness: 1, flatShading: true });
+  const mesh = new THREE.InstancedMesh(geo, mat, count);
+  const segs: [number, number, number, number][] = [];
+  for (const route of Object.values(scenario.routes)) {
+    for (let i = 1; i < route.length; i++) {
+      const a = scenario.waypoints.find((w) => w.id === route[i - 1])!;
+      const b = scenario.waypoints.find((w) => w.id === route[i])!;
+      segs.push([a.x, a.z, b.x, b.z]);
+    }
+  }
+  const nearRoute = (x: number, z: number) =>
+    segs.some(([ax, az, bx, bz]) => {
+      const dx = bx - ax;
+      const dz = bz - az;
+      const t = Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / (dx * dx + dz * dz)));
+      return Math.hypot(x - (ax + t * dx), z - (az + t * dz)) < 2.2;
+    });
+  const m = new THREE.Matrix4();
+  const q = new THREE.Quaternion();
+  const e = new THREE.Euler();
+  let n = 0;
+  for (let i = 0; n < count && i < count * 6; i++) {
+    const r = 9 + noise2(i, 1.7) * 140;
+    const a = noise2(i, 9.1) * Math.PI * 2;
+    const x = Math.cos(a) * r;
+    const z = Math.sin(a) * r;
+    if (nearRoute(x, z) || Math.hypot(x - 8, z - 6) < 7 || Math.hypot(x - 24, z - 12) < 7) continue;
+    const size = 0.08 + Math.pow(noise2(i, 3.3), 3) * 0.9;
+    e.set(noise2(i, 4) * 3, noise2(i, 5) * 3, noise2(i, 6) * 3);
+    q.setFromEuler(e);
+    m.compose(new THREE.Vector3(x, heightAt(x, z) + size * 0.25, z), q, new THREE.Vector3(size * 1.3, size * 0.7, size));
+    mesh.setMatrixAt(n++, m);
+  }
+  mesh.count = n;
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
+  return mesh;
+}
+
 export function createMoonScene(scenario: Scenario, quality: Quality = 'low'): MoonScene {
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0x000000);
-  void scenario;
 
   // ---- terrain: REAL LOLA DEM + micro detail
   const heightAt = (x: number, z: number) => lolaHeight(x, z) + microDetail(x, z);
@@ -150,7 +263,7 @@ export function createMoonScene(scenario: Scenario, quality: Quality = 'low'): M
 
   // ---- Sun: REAL position at the site on the mission date (NASA JPL Horizons) — only a few degrees above the horizon
   const sunDir = skyDirection(MISSION_SKY.sun.azimuthDeg, MISSION_SKY.sun.elevationDeg);
-  const sun = new THREE.DirectionalLight(0xfff6e8, 3.2);
+  const sun = new THREE.DirectionalLight(0xfff6e8, 7);
   sun.position.copy(sunDir).multiplyScalar(150);
   sun.castShadow = true;
   sun.shadow.bias = -0.0004;
@@ -158,48 +271,56 @@ export function createMoonScene(scenario: Scenario, quality: Quality = 'low'): M
   sun.shadow.mapSize.set(quality === 'high' ? 2048 : 1024, quality === 'high' ? 2048 : 1024);
   Object.assign(sun.shadow.camera, { left: -70, right: 70, top: 70, bottom: -70, near: 1, far: 400 });
   scene.add(sun, sun.target);
-  const sunDisk = new THREE.Mesh(new THREE.SphereGeometry(8, 16, 16), new THREE.MeshBasicMaterial({ color: 0xffffff }));
+  const sunDisk = new THREE.Mesh(new THREE.SphereGeometry(4, 16, 16), new THREE.MeshBasicMaterial({ color: 0xffffff }));
   sunDisk.position.copy(sunDir).multiplyScalar(850);
-  scene.add(sunDisk);
-  scene.add(new THREE.AmbientLight(0x223344, 0.04)); // no atmosphere → near-black shadows
+  const glare = new THREE.Sprite(
+    new THREE.SpriteMaterial({ map: glowTexture('255,244,220'), blending: THREE.AdditiveBlending, depthWrite: false, transparent: true }),
+  );
+  glare.scale.set(170, 170, 1);
+  glare.position.copy(sunDisk.position);
+  scene.add(sunDisk, glare);
+  // no atmosphere → deep shadows; a faint fill (sunlight bounced off the regolith + earthshine) keeps them readable
+  scene.add(new THREE.HemisphereLight(0x9aa6c0, 0x2a2622, 0.4));
 
-  // ---- Earth: REAL position (JPL Horizons) + REAL photo of Earth (NASA EPIC camera on DSCOVR, public/textures/earth-epic.jpg).
-  // Apparent size from the Moon ≈ 1.9°. TODO(P1): EPIC shows the full day side; the real phase seen from the Moon differs.
-  const earthTex = new THREE.TextureLoader().load('/textures/earth-epic.jpg');
-  earthTex.colorSpace = THREE.SRGBColorSpace;
-  const earth = new THREE.Sprite(new THREE.SpriteMaterial({ map: earthTex, transparent: true, depthWrite: false }));
+  // ---- Earth: REAL position (JPL Horizons) + REAL photo (NASA EPIC) with the REAL phase seen from the Moon
+  const earthDir = skyDirection(MISSION_SKY.earth.azimuthDeg, MISSION_SKY.earth.elevationDeg);
   const EARTH_DIST = 850;
   const earthSize = 2 * EARTH_DIST * Math.tan(THREE.MathUtils.degToRad(0.95));
+  const earthCanvas = document.createElement('canvas');
+  earthCanvas.width = earthCanvas.height = 256;
+  const earthTex = new THREE.CanvasTexture(earthCanvas);
+  earthTex.colorSpace = THREE.SRGBColorSpace;
+  const earthImg = new Image();
+  earthImg.onload = () => {
+    drawEarthPhase(earthCanvas, earthImg, sunDir, earthDir);
+    earthTex.needsUpdate = true;
+  };
+  earthImg.src = '/textures/earth-epic.jpg';
+  const earth = new THREE.Sprite(new THREE.SpriteMaterial({ map: earthTex, transparent: true, depthWrite: false }));
   earth.scale.set(earthSize, earthSize, 1);
-  earth.position.copy(skyDirection(MISSION_SKY.earth.azimuthDeg, MISSION_SKY.earth.elevationDeg)).multiplyScalar(EARTH_DIST);
-  scene.add(earth);
+  earth.position.copy(earthDir).multiplyScalar(EARTH_DIST);
+  const earthHalo = new THREE.Sprite(
+    new THREE.SpriteMaterial({ map: glowTexture('120,170,255'), blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, opacity: 0.6 }),
+  );
+  earthHalo.scale.set(earthSize * 2.6, earthSize * 2.6, 1);
+  earthHalo.position.copy(earth.position);
+  scene.add(earthHalo, earth);
+  // sky labels help kids find the tiny real-size Earth (1.9°) and the Sun on the horizon
+  scene.add(skyLabel('🌍 Earth · Yer', earthDir, EARTH_DIST, 3.2), skyLabel('☀️ Sun · Günəş', sunDir, 850, 4.5));
 
-  // ---- waypoint markers (gameplay owner P2 replaces with gaze targets)
-  for (const w of scenario.waypoints) {
-    const m = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.35, 0.35, 0.05, 24),
-      new THREE.MeshBasicMaterial({ color: w.siteId ? 0xffc847 : 0x5fd3ff }),
-    );
-    m.position.set(w.x, heightAt(w.x, w.z) + 0.05, w.z);
-    m.name = `wp:${w.id}`;
-    scene.add(m);
-  }
+  // ---- the outpost (VSAT mast, greenhouse, antenna, habitat, lander) reacts to Mission Control's switches
+  const outpost = createOutpost(heightAt, sunDir);
+  scene.add(outpost.group);
 
-  let sunBlocked = false;
+  // ---- scattered rocks (procedural, kept off the walking routes and the outpost)
+  scene.add(createRocks(heightAt, scenario, quality));
+
   return {
     scene,
     sun,
     terrainHeight: heightAt,
-    update(_dt, state) {
-      earth.rotation.y += 0.0005;
-      const blocked = Boolean(state?.sun.blocked);
-      if (blocked !== sunBlocked) {
-        sunBlocked = blocked;
-        // Sun slides behind the ridge: terrain at the base falls into shadow.
-        // the base's low solar arrays fall into the ridge shadow; the sunlit terrain dims only slightly
-        sun.intensity = blocked ? 1.6 : 3.2;
-        sunDisk.visible = !blocked;
-      }
+    update(dt, state) {
+      outpost.update(dt, state);
     },
     dispose() {
       scene.traverse((o) => {

@@ -29,7 +29,7 @@ export function addVisor(camera: THREE.PerspectiveCamera) {
   // size the quad to cover the field of view at that distance (+ margin)
   const h = 2 * dist * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * 1.25;
   const mesh = new THREE.Mesh(
-    new THREE.PlaneGeometry(h * Math.max(1, camera.aspect / 2), h),
+    new THREE.PlaneGeometry(h * Math.max(1.2, camera.aspect * 1.1), h),
     new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthTest: false, depthWrite: false }),
   );
   mesh.position.z = -dist;
