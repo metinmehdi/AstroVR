@@ -33,6 +33,18 @@ const en = {
   'debrief.science': 'Science records',
   'debrief.resources': 'Resources',
   'debrief.teamwork': 'Teamwork',
+  'note.skippedSuitCheck': 'Suit check skipped: a small leak went unnoticed, oxygen ran out faster.',
+  'note.skippedToolCheck': 'Tool check skipped: no numbered bags, so the sample cannot be traced.',
+  'note.skippedCommCheck': 'Radio check skipped: the team never confirmed it could hear each other.',
+  'note.noPhotoBeforeSample': 'A sample was collected before its photo. Apollo crews always photographed first.',
+  'note.noSamples': 'No sample was collected.',
+  'note.lowBattery': 'The base battery ran low. Raising the solar mast or switching loads off earlier would help.',
+  'note.highDose': 'Radiation dose was high. The shelter (~4× less) or crater shadow (−40%) protect you.',
+  'note.greenhouseStress': 'Greenhouse lights were off too long: the plants are stressed (like plants in real Apollo soil).',
+  'note.radioLost': 'Some radio calls were lost because the antenna was off.',
+  'note.abort.dose': 'ABORT: the storm dose passed the flight rule. Real crews return before that happens.',
+  'note.abort.oxygen': 'ABORT: not enough oxygen to walk back home with a reserve.',
+  'note.abort.power': 'ABORT: the base lost power for life support.',
 } as const;
 
 export type I18nKey = keyof typeof en;
@@ -69,6 +81,18 @@ const az: Record<I18nKey, string> = {
   'debrief.science': 'Elmi qeydlər',
   'debrief.resources': 'Resurslar',
   'debrief.teamwork': 'Komanda işi',
+  'note.skippedSuitCheck': 'Skafandr yoxlanmadı: kiçik sızma gözdən qaçdı, oksigen tez bitdi.',
+  'note.skippedToolCheck': 'Alətlər yoxlanmadı: nömrəli kisə yox idi, nümunənin izi itdi.',
+  'note.skippedCommCheck': 'Rabitə yoxlanmadı: komanda bir-birini eşitdiyini təsdiqləmədi.',
+  'note.noPhotoBeforeSample': 'Nümunə fotodan əvvəl götürüldü. Apollo ekipajları həmişə əvvəl foto çəkirdi.',
+  'note.noSamples': 'Nümunə toplanmadı.',
+  'note.lowBattery': 'Baza batareyası azaldı. Günəş dirəyini qaldırmaq və ya yükləri tez söndürmək kömək edərdi.',
+  'note.highDose': 'Radiasiya dozası yüksək oldu. Sığınacaq (~4 dəfə az) və ya krater kölgəsi (−40%) qoruyur.',
+  'note.greenhouseStress': 'İstixana işıqları çox uzun söndü: bitkilər stres keçirdi (real Apollo torpağındakı bitkilər kimi).',
+  'note.radioLost': 'Antenna söndüyü üçün bəzi radio mesajları itdi.',
+  'note.abort.dose': 'DAYANDIRILDI: fırtına dozası uçuş qaydasını keçdi. Real ekipajlar bundan əvvəl qayıdır.',
+  'note.abort.oxygen': 'DAYANDIRILDI: ehtiyatla evə qayıtmaq üçün oksigen çatmırdı.',
+  'note.abort.power': 'DAYANDIRILDI: bazada həyat təminatı üçün enerji bitdi.',
 };
 
 const dict: Record<Lang, Record<I18nKey, string>> = { en, az };

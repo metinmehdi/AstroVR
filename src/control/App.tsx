@@ -8,7 +8,7 @@ import QRCode from 'qrcode';
 import { createTransport, type Transport } from '../shared/transport';
 import { astronautUrl, evaClock, makeId, makeRoomCode, STATE_PUBLISH_HZ } from '../shared/protocol';
 import { NOBILE_MAY2024 as SCENARIO } from '../shared/scenario';
-import { t } from '../shared/i18n';
+import { t, type I18nKey } from '../shared/i18n';
 import type { Lang, RadioMessageType, RoomMeta, SimState } from '../shared/types';
 import { applyAction, applyControl, createInitialState, step, type ControlCommand } from '../sim/model';
 import { computeDebrief } from '../sim/scoring';
@@ -110,7 +110,7 @@ export function App() {
 
       {s.phase === 'lobby' && (
         <section className="lobby">
-          <img src={qr} alt="QR" width={320} height={320} />
+          {qr ? <img src={qr} alt="QR" width={320} height={320} /> : <div style={{ width: 320, height: 320 }} />}
           <p>
             {t(lang, 'control.room')}: <b>{code}</b> · {t(lang, 'control.scan')}
           </p>
@@ -179,7 +179,11 @@ export function App() {
                   {'☆'.repeat(3 - debrief[k])}
                 </p>
               ))}
-              <p>{debrief.notes.join(' · ')}</p>
+              <ul>
+                {debrief.notes.map((n) => (
+                  <li key={n}>{t(lang, n as I18nKey)}</li>
+                ))}
+              </ul>
             </div>
           )}
           <ol className="events">

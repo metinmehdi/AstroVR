@@ -1,8 +1,8 @@
 /**
- * Astronaut (phone in VR box). Owner: P2. Skeleton: join room → START (permissions) → stereo Moon scene
- * with gyroscope head tracking → publishes pose, receives SimState + radio.
- * TODO(P2): gaze reticle + 1.5 s fuse, waypoint lope (Apollo-style hops + comfort vignette),
- *           wrist panel (O2, dose clicks, walk-back), checklist + sample interactions, storm choice.
+ * Astronaut (phone in a VR box). Owner: P2.
+ * Join room → START (sensors, audio, fullscreen, landscape, wake lock) → stereo Moon scene with gyroscope head
+ * tracking → gaze-driven mission (src/astronaut/mission.ts) → publishes pose, receives SimState + radio.
+ * Debug on a laptop: open a.html?room=CODE&mono=1 and drag the mouse to look.
  */
 import * as THREE from 'three';
 import { createTransport } from '../shared/transport';
@@ -13,8 +13,8 @@ import type { Lang, RadioMessage, SimState } from '../shared/types';
 import { createMoonScene, type Quality } from '../scene/createMoonScene';
 import { HeadTracker, requestOrientationPermission } from './orientation';
 import { StereoRenderer } from './stereo';
+import { AstronautMission } from './mission';
 
-const EYE_HEIGHT = 1.65;
 const params = new URLSearchParams(location.search);
 const quality: Quality = params.get('q') === 'high' ? 'high' : 'low';
 
@@ -42,26 +42,13 @@ async function main() {
   }
 
   const transport = await createTransport(code);
-  transport.onMeta((m) => {
-    if (m && m.lang !== lang) {
-      lang = m.lang;
-      applyLang();
-    }
-  });
-  transport.onState((s) => (state = s));
-  transport.onConnection((ok) => (banner.hidden = ok));
-  // CAPCOM messages arrive after the real Earth–Moon light delay. Audio (P5) listens for this event.
-  transport.onRadio((msg: RadioMessage) => {
-    if (msg.lost) return;
-    setTimeout(() => window.dispatchEvent(new CustomEvent<RadioMessage>('astrovr:radio', { detail: msg })), COMM_DELAY_MS);
-  });
 
   // ---- three.js
   const renderer = new THREE.WebGLRenderer({ antialias: quality === 'high', powerPreference: 'high-performance' });
   renderer.setPixelRatio(Math.min(devicePixelRatio, quality === 'high' ? 2 : 1.5));
   renderer.setSize(innerWidth, innerHeight);
   renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.shadowMap.type = THREE.PCFShadowMap;
   document.body.appendChild(renderer.domElement);
 
   const camera = new THREE.PerspectiveCamera(80, innerWidth / innerHeight, 0.05, 2000);
@@ -70,14 +57,37 @@ async function main() {
   const moon = createMoonScene(SCENARIO, quality);
   moon.scene.add(rig);
 
-  const placeRig = (waypointId: string) => {
-    const w = SCENARIO.waypoints.find((x) => x.id === waypointId) ?? SCENARIO.waypoints[0];
-    rig.position.set(w.x, moon.terrainHeight(w.x, w.z) + EYE_HEIGHT, w.z);
-  };
-  placeRig('airlock');
+  const mission = new AstronautMission({
+    scene: moon.scene,
+    rig,
+    camera,
+    scenario: SCENARIO,
+    transport,
+    terrainHeight: moon.terrainHeight,
+    getState: () => state,
+    getLang: () => lang,
+  });
+
+  if (params.has('debug')) (window as unknown as { astrovr: AstronautMission }).astrovr = mission;
+
+  transport.onMeta((m) => {
+    if (m && m.lang !== lang) {
+      lang = m.lang;
+      applyLang();
+      mission.relabel();
+    }
+  });
+  transport.onState((s) => (state = s));
+  transport.onConnection((ok) => (banner.hidden = ok));
+  // CAPCOM messages arrive after the real Earth–Moon light delay (1.28 s)
+  transport.onRadio((msg: RadioMessage) => {
+    if (msg.lost) return;
+    setTimeout(() => mission.onRadio(msg), COMM_DELAY_MS);
+  });
 
   const head = new HeadTracker(camera);
   const stereo = new StereoRenderer(renderer);
+  stereo.enabled = params.get('mono') !== '1';
 
   addEventListener('resize', () => {
     renderer.setSize(innerWidth, innerHeight);
@@ -86,6 +96,7 @@ async function main() {
   });
 
   startBtn.onclick = async () => {
+    mission.audio.unlock(); // must happen inside the tap
     await requestOrientationPermission();
     try {
       await document.documentElement.requestFullscreen?.();
@@ -102,7 +113,6 @@ async function main() {
     } catch {
       /* optional */
     }
-    window.dispatchEvent(new Event('astrovr:audio-unlock')); // P5: resume AudioContext here
     overlay.hidden = true;
     setTimeout(() => head.recenter(), 1500); // time to slide the phone into the box
     transport.sendAction({ kind: 'ready' });
@@ -117,16 +127,13 @@ async function main() {
     });
   }, 1000 / POSE_PUBLISH_HZ);
 
-  let lastWp = 'airlock';
-  const clock = new THREE.Clock();
-  renderer.setAnimationLoop(() => {
-    const dt = clock.getDelta();
+  const timer = new THREE.Timer();
+  renderer.setAnimationLoop((now) => {
+    timer.update(now);
+    const dt = Math.min(timer.getDelta(), 0.1);
     head.update();
-    if (state && state.astronaut.waypointId !== lastWp) {
-      lastWp = state.astronaut.waypointId;
-      placeRig(lastWp); // TODO(P2): animated lope instead of a jump
-    }
     moon.update(dt, state);
+    mission.update(dt);
     stereo.render(moon.scene, camera);
   });
 }
