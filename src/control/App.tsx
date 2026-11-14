@@ -7,7 +7,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { StoryIntro } from './StoryIntro';
 import { FlightFilm } from './FlightFilm';
-import { preloadFilm } from '../shared/filmCache';
+import { onFilmProgress, preloadFilm } from '../shared/filmCache';
 import QRCode from 'qrcode';
 import { createTransport, type Transport } from '../shared/transport';
 import { astronautUrl, makeId, makeRoomCode, STATE_PUBLISH_HZ } from '../shared/protocol';
@@ -57,8 +57,10 @@ export function App() {
   const [storyOn, setStoryOn] = useState(() => urlFlags.get('story') !== '0');
   const [shortFlight, setShortFlight] = useState(() => urlFlags.get('pitch') === '1');
   const [story, setStory] = useState<null | 'preview' | 'start' | 'record'>(null);
+  const [filmPct, setFilmPct] = useState(0);
   useEffect(() => {
     void preloadFilm(); // the real flight footage, ready long before liftoff
+    return onFilmProgress(setFilmPct);
   }, []);
   // the phone shows the same story in VR; if the astronaut skips there, the projector story ends too
   const storyRun = useRef<{ id: string; seen: boolean } | null>(null);
@@ -149,7 +151,9 @@ export function App() {
     setLastRadio({ id, type, at: sim.current.t, lost });
   };
   const restart = async () => {
+    const filmReady = sim.current.filmReady; // the phone keeps the footage in memory across missions
     sim.current = createInitialState(SCENARIO);
+    sim.current.filmReady = filmReady;
     await tx.current?.resetQueues();
     setView(structuredClone(sim.current));
     setLastRadio(null);
@@ -226,6 +230,7 @@ export function App() {
           else if (storyOn) setStory('start');
           else cmd({ kind: 'launch', short: shortFlight });
         }}
+        film={{ laptop: filmPct, phone: s.filmReady }}
         story={{
           on: storyOn,
           setOn: setStoryOn,

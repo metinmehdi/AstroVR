@@ -18,6 +18,7 @@ import { addVisor } from './visor';
 import { MirrorTap, startMirrorSender } from '../shared/rtc';
 import { Flight } from './flight';
 import { StoryVR } from './storyVR';
+import { preloadFilm } from '../shared/filmCache';
 
 const params = new URLSearchParams(location.search);
 const quality: Quality = params.get('q') === 'high' ? 'high' : 'low';
@@ -153,6 +154,7 @@ async function main() {
   startBtn.onclick = async () => {
     mission.audio.unlock(); // must happen inside the tap
     flight.primeVideo(); // the real window film may then play without another gesture
+    void preloadFilm().then((src) => src.startsWith('blob:') && transport.sendAction({ kind: 'filmReady' }));
     await requestOrientationPermission();
     try {
       await document.documentElement.requestFullscreen?.();

@@ -20,6 +20,7 @@ export function Lobby({
   onPreDone,
   onPreSkip,
   story,
+  film,
 }: {
   lang: Lang;
   qr: string;
@@ -40,6 +41,8 @@ export function Lobby({
     play: () => void;
     record?: () => void;
   };
+  /** real flight footage readiness: laptop download 0..1, phone ready */
+  film: { laptop: number; phone: boolean };
 }) {
   const az = lang === 'az';
   return (
@@ -85,6 +88,10 @@ export function Lobby({
               <Icon name="play" size={22} />
               {t(lang, 'control.start')}
             </button>
+            <div className={`film-ready ${film.laptop >= 1 && film.phone ? 'ok' : ''}`}>
+              🎬 {az ? 'Real NASA kadrları' : 'Real NASA footage'}: {az ? 'noutbuk' : 'laptop'} {film.laptop >= 1 ? '✓' : `${Math.round(film.laptop * 100)}%`} ·{' '}
+              {az ? 'telefon' : 'phone'} {film.phone ? '✓' : az ? 'yüklənir…' : 'loading…'}
+            </div>
             <div className="story-opts">
               <button className="btn ghost" onClick={story.play} title={az ? 'Proyektor üçün 35 saniyəlik hekayə' : '35-second story for the projector'}>
                 <Icon name="play" size={16} /> {az ? 'Hekayə (35 s)' : 'Story (35 s)'}
@@ -100,7 +107,7 @@ export function Lobby({
               </label>
               <label className="chk">
                 <input type="checkbox" checked={story.short} onChange={(e) => story.setShort(e.target.checked)} />
-                <span>{az ? 'Qısa uçuş 20 s (pitch)' : 'Short flight 20 s (pitch)'}</span>
+                <span>{az ? 'Qısa uçuş 25 s (pitch)' : 'Short flight 25 s (pitch)'}</span>
               </label>
             </div>
             <button className="btn judge" disabled={!ready} onClick={onJudge} title={tr(lang, 'lobby.judgeSub')}>

@@ -2151,3 +2151,15 @@ input:focus {
   font: 700 0.95rem system-ui, sans-serif;
   cursor: pointer;
 }
+
+.film-ready {
+  font-size: 0.85rem;
+  color: var(--muted);
+  padding: 6px 10px;
+  border: 1px dashed var(--line-2);
+  border-radius: 10px;
+}
+.film-ready.ok {
+  color: #3ddc84;
+  border-color: rgba(61, 220, 132, 0.5);
+}

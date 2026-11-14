@@ -67,6 +67,7 @@ export function createInitialState(_scenario?: Scenario): SimState {
     phaseStartedAt: 0,
     flight: null,
     story: null,
+    filmReady: false,
     events: [],
   };
 }
@@ -186,6 +187,9 @@ export function applyAction(s: SimState, action: AstronautAction, scenario: Scen
   switch (action.kind) {
     case 'ready':
       log(s, 'astronaut', 'ready');
+      return;
+    case 'filmReady':
+      s.filmReady = true;
       return;
     case 'skipStory':
       if (s.story) {
