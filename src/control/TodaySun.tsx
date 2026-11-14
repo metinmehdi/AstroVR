@@ -5,12 +5,25 @@
 import { useEffect, useState } from 'react';
 import cached from '../data/donki-recent.json';
 import type { Lang } from '../shared/types';
+import { Icon } from './icons';
+import { tr } from './strings';
 
 interface Item {
   type: string;
   time: string;
   body: string;
 }
+
+const NAMES: Record<string, [string, string, string]> = {
+  FLR: ['☀️', 'Solar flares', 'Günəş alovları'],
+  CME: ['💨', 'Coronal mass ejections', 'Koronal kütlə atılmaları'],
+  SEP: ['☢️', 'Energetic particles', 'Enerjili hissəciklər'],
+  GST: ['🧲', 'Geomagnetic storms', 'Geomaqnit fırtınaları'],
+  IPS: ['🌊', 'Interplanetary shocks', 'Planetlərarası zərbələr'],
+  RBE: ['🛰️', 'Radiation belt boosts', 'Radiasiya qurşağı güclənməsi'],
+  MPC: ['🌐', 'Magnetopause crossings', 'Maqnitopauza keçidləri'],
+  Report: ['📝', 'Weekly reports', 'Həftəlik hesabatlar'],
+};
 
 function summarize(items: Item[]) {
   const counts: Record<string, number> = {};
@@ -20,7 +33,7 @@ function summarize(items: Item[]) {
   return { counts, summary, reportTime: report?.time ?? '' };
 }
 
-export function TodaySun({ lang }: { lang: Lang }) {
+export function TodaySun({ lang, compact = false }: { lang: Lang; compact?: boolean }) {
   const [items, setItems] = useState<Item[]>((cached.items as Item[]) ?? []);
   const [live, setLive] = useState(false);
   useEffect(() => {
@@ -38,23 +51,37 @@ export function TodaySun({ lang }: { lang: Lang }) {
   const { counts, summary, reportTime } = summarize(items);
   const az = lang === 'az';
   return (
-    <div className="card sun">
-      <div className="card-head">
-        ☀️ {az ? 'Bugünkü real Günəş' : "Today's real Sun"}{' '}
-        <span className={live ? 'badge ok' : 'badge'}>{live ? 'LIVE · NASA DONKI' : `ARCHIVE · ${cached.fetchedAt.slice(0, 10)}`}</span>
+    <section className={`card sun ${compact ? 'compact' : ''}`}>
+      <div className="card-title">
+        <Icon name="sun" size={16} /> {tr(lang, 'sun.title')}
+        <span className="spacer" />
+        <span className={live ? 'badge live' : 'badge'}>
+          {live ? (
+            <>
+              <i className="dot" /> {tr(lang, 'sun.live')}
+            </>
+          ) : (
+            `${tr(lang, 'sun.archive')} · ${cached.fetchedAt.slice(0, 10)}`
+          )}
+        </span>
       </div>
+      <div className="muted small">{tr(lang, 'sun.sub')}</div>
       <div className="chips">
-        {Object.entries(counts).map(([k, v]) => (
-          <span key={k} className="chip">
-            {k} × {v}
-          </span>
-        ))}
+        {Object.keys(counts).length === 0 && <span className="muted small">—</span>}
+        {Object.entries(counts).map(([k, v]) => {
+          const n = NAMES[k];
+          return (
+            <span key={k} className="chip" title={k}>
+              {n ? n[0] : '•'} {n ? (az ? n[2] : n[1]) : k} <b>{v}</b>
+            </span>
+          );
+        })}
       </div>
-      {summary && (
-        <p className="muted small">
+      {summary && !compact && (
+        <p className="muted small sun-summary">
           {reportTime.slice(0, 10)}: {summary}
         </p>
       )}
-    </div>
+    </section>
   );
 }

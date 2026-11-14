@@ -1,6 +1,6 @@
 /**
- * Helmet cam: Mission Control sees what the astronaut sees (like NASA's science team following the
- * Artemis III VR moonwalk through headset video). Rendered locally from the astronaut's head pose — no video stream.
+ * Helmet cam (fallback when the live phone mirror is unavailable): Mission Control renders the same Moon scene locally
+ * from the astronaut's head pose (like NASA's science team following the Artemis III VR moonwalk). Fills its container.
  */
 import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
@@ -12,30 +12,35 @@ export function HelmetCam({ poseRef, state }: { poseRef: { current: AstronautPos
   const host = useRef<HTMLDivElement>(null);
   const latest = useRef({ state });
   latest.current = { state };
-  const pose = poseRef.current;
 
   useEffect(() => {
     const el = host.current!;
     const renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+    renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
     renderer.shadowMap.enabled = true;
     el.appendChild(renderer.domElement);
     const moon = createMoonScene(SCENARIO, 'low');
-    const camera = new THREE.PerspectiveCamera(75, 16 / 9, 0.05, 2000);
+    const camera = new THREE.PerspectiveCamera(70, 16 / 9, 0.05, 2000);
     const lamp = new THREE.SpotLight(0xfff3dd, 6, 30, 0.55, 0.5, 1.2);
     lamp.target.position.set(0, -0.6, -4);
     camera.add(lamp, lamp.target);
     moon.scene.add(camera);
+    // fallback view only: a soft fill light so the projector picture stays readable in deep polar shadow
+    const fill = new THREE.HemisphereLight(0xc8d8ff, 0x2a241c, 0.45);
+    moon.scene.add(fill);
     const target = new THREE.Vector3();
     const resize = () => {
-      const w = el.clientWidth;
-      renderer.setSize(w, (w * 9) / 16);
-      camera.aspect = 16 / 9;
+      const w = Math.max(1, el.clientWidth);
+      const h = Math.max(1, el.clientHeight);
+      renderer.setSize(w, h);
+      camera.aspect = w / h;
       camera.updateProjectionMatrix();
     };
     resize();
-    addEventListener('resize', resize);
+    const ro = new ResizeObserver(resize);
+    ro.observe(el);
     const timer = new THREE.Timer();
+    const q = new THREE.Quaternion();
     renderer.setAnimationLoop((now) => {
       timer.update(now);
       const { state: s } = latest.current;
@@ -44,23 +49,20 @@ export function HelmetCam({ poseRef, state }: { poseRef: { current: AstronautPos
       const w = SCENARIO.waypoints.find((x) => x.id === wpId) ?? SCENARIO.waypoints[0];
       target.set(w.x, moon.terrainHeight(w.x, w.z) + 1.65, w.z);
       camera.position.lerp(target, 0.05); // smooth: the phone lopes between waypoints
-      if (p) camera.quaternion.slerp(new THREE.Quaternion(...p.q), 0.3);
+      if (p) camera.quaternion.slerp(q.set(...p.q), 0.3);
       moon.update(timer.getDelta(), s);
       renderer.render(moon.scene, camera);
     });
     return () => {
-      removeEventListener('resize', resize);
+      ro.disconnect();
       renderer.setAnimationLoop(null);
       renderer.dispose();
       moon.dispose();
+      moon.scene.remove(fill);
       el.removeChild(renderer.domElement);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  return (
-    <div className="card cam">
-      <div className="card-head">🎥 Helmet cam {pose ? '' : '· waiting for astronaut'}</div>
-      <div ref={host} className="cam-host" />
-    </div>
-  );
+  return <div ref={host} className="cam-host" />;
 }
