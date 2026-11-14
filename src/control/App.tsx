@@ -1,20 +1,32 @@
 /**
- * Mission Control (laptop). Owner: P3. AUTHORITATIVE: runs the simulation and publishes SimState.
- * Skeleton UI only — P3 turns this into the kid-friendly NASA console (dark, big icons, 3 gauges,
- * 4 switches, map, helmet cam, Today's Sun, debrief with stars + decision timeline).
+ * Mission Control (laptop). AUTHORITATIVE: runs the simulation at 10 Hz and publishes SimState at 4 Hz.
+ * Two views of the same console:
+ *  - Operator (default): a kid runs the mission — live helmet view, what to do NOW, gauges, systems, radio, map, log.
+ *  - Broadcast (key B): projector/judges — full-bleed astronaut view, captions, REAL DATA chart, event banners.
  */
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import QRCode from 'qrcode';
 import { createTransport, type Transport } from '../shared/transport';
-import { astronautUrl, evaClock, makeId, makeRoomCode, STATE_PUBLISH_HZ } from '../shared/protocol';
+import { astronautUrl, makeId, makeRoomCode, STATE_PUBLISH_HZ } from '../shared/protocol';
 import { NOBILE_MAY2024 as SCENARIO } from '../shared/scenario';
-import { t } from '../shared/i18n';
+import { currentObjective } from '../shared/objective';
+import { startMirrorReceiver } from '../shared/rtc';
 import type { AstronautPose, Lang, RadioMessageType, RoomMeta, SimState } from '../shared/types';
 import { applyAction, applyControl, createInitialState, step, type ControlCommand } from '../sim/model';
+import { Banners, Caption, ChallengeStrip, ProtonChart, useBanners } from './Broadcast';
 import { Debrief } from './Debrief';
-import { HelmetCam } from './HelmetCam';
+import { EventFeed } from './EventFeed';
+import { Gauges } from './Gauges';
+import { Header } from './Header';
+import { Icon } from './icons';
+import { Lobby } from './Lobby';
+import { MapCard } from './MapCard';
+import { MirrorView } from './MirrorView';
 import { NasaDataPanel } from './NasaDataPanel';
-import { TodaySun } from './TodaySun';
+import { NowCard, Radio, Systems, type LastRadio } from './Panels';
+import { loadStats, recordSession, type QuizStats } from './Quiz';
+import { tr, type SKey } from './strings';
+import { t } from '../shared/i18n';
 
 const TICK_S = 0.1;
 
@@ -30,6 +42,14 @@ export function App() {
   const tx = useRef<Transport | null>(null);
   const poseRef = useRef<AstronautPose | null>(null);
   const [showData, setShowData] = useState(false);
+  const [stream, setStream] = useState<MediaStream | null>(null);
+  const [broadcast, setBroadcast] = useState(() => new URLSearchParams(location.search).get('view') === 'broadcast');
+  const [lastRadio, setLastRadio] = useState<LastRadio | null>(null);
+  // quiz (measurable impact): pre in the lobby (optional), post in the debrief
+  const [pre, setPre] = useState<'open' | 'done' | 'skipped'>('open');
+  const [preAnswers, setPreAnswers] = useState<number[] | null>(null);
+  const [postAnswers, setPostAnswers] = useState<number[] | null>(null);
+  const [stats, setStats] = useState<QuizStats>(() => loadStats());
 
   const meta = (): RoomMeta => ({
     code,
@@ -41,13 +61,14 @@ export function App() {
     astronautJoined: ready,
   });
 
-  // transport + QR
+  // transport + QR + live mirror receiver
   useEffect(() => {
     let alive = true;
+    let stopMirror = () => {};
     const url = new URL(location.href);
     url.searchParams.set('room', code);
     history.replaceState(null, '', url);
-    void QRCode.toDataURL(astronautUrl(location.origin, code), { margin: 1, width: 320 }).then(setQr);
+    void QRCode.toDataURL(astronautUrl(location.origin, code), { margin: 1, width: 360 }).then(setQr);
     void createTransport(code).then((transport) => {
       if (!alive) return transport.close();
       tx.current = transport;
@@ -58,9 +79,11 @@ export function App() {
         applyAction(sim.current, env.action, SCENARIO);
       });
       void transport.setMeta(meta());
+      stopMirror = startMirrorReceiver(transport, setStream);
     });
     return () => {
       alive = false;
+      stopMirror();
       tx.current?.close();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -86,6 +109,18 @@ export function App() {
     return () => clearInterval(id);
   }, []);
 
+  // B = broadcast / operator view
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const el = e.target as HTMLElement | null;
+      if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable)) return;
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      if (e.key === 'b' || e.key === 'B') setBroadcast((v) => !v);
+    };
+    addEventListener('keydown', onKey);
+    return () => removeEventListener('keydown', onKey);
+  }, []);
+
   const cmd = (c: ControlCommand) => {
     applyControl(sim.current, c, SCENARIO);
     setView(structuredClone(sim.current));
@@ -95,129 +130,152 @@ export function App() {
     const lost = !sim.current.switches.antenna;
     cmd({ kind: 'radio', msgId: id, type });
     tx.current?.sendRadio({ id, type, ts: Date.now(), lost });
+    setLastRadio({ id, type, at: sim.current.t, lost });
   };
   const restart = async () => {
     sim.current = createInitialState(SCENARIO);
     await tx.current?.resetQueues();
     setView(structuredClone(sim.current));
+    setLastRadio(null);
+    setPre('open');
+    setPreAnswers(null);
+    setPostAnswers(null);
   };
+  const onPostDone = useCallback(
+    (a: number[]) => {
+      setPostAnswers(a);
+      if (preAnswers) setStats(recordSession(preAnswers, a));
+    },
+    [preAnswers],
+  );
 
   const s = view;
-  const pct = (n: number) => `${Math.round(n)}%`;
+  const radioCheckPending = Boolean(lastRadio && lastRadio.type === 'radioCheck' && !lastRadio.lost && lastRadio.id in s.comms.pending);
+  const obj = currentObjective(s, { routes: SCENARIO.routes, radioCheckPending });
+  const banners = useBanners(s.events, lang);
+  const stepName = obj.phaseStep ? tr(lang, `step.${obj.phaseStep}` as SKey) : '';
 
-  return (
-    <div className="mc">
-      <header>
-        <h1>{t(lang, 'app.title')}</h1>
-        <span className={connected ? 'ok' : 'bad'}>{connected ? '● LINK' : '○ NO LINK'}</span>
-        <button onClick={() => setShowData(true)}>🛰️ NASA DATA</button>
-        <button onClick={() => setLang(lang === 'en' ? 'az' : 'en')}>{lang === 'en' ? 'AZ' : 'EN'}</button>
-      </header>
-      {showData && <NasaDataPanel lang={lang} onClose={() => setShowData(false)} />}
+  const header = (
+    <Header
+      s={s}
+      lang={lang}
+      step={obj.phaseStep}
+      connected={connected}
+      ready={ready}
+      mirrorLive={Boolean(stream)}
+      broadcast={broadcast}
+      overlay={broadcast && s.phase !== 'lobby' && s.phase !== 'debrief'}
+      onData={() => setShowData(true)}
+      onLang={() => setLang(lang === 'en' ? 'az' : 'en')}
+      onBroadcast={() => setBroadcast((v) => !v)}
+    />
+  );
 
-      {s.phase === 'lobby' && (
-        <section className="lobby">
-          {qr ? <img src={qr} alt="QR" width={320} height={320} /> : <div style={{ width: 320, height: 320 }} />}
-          <p>
-            {t(lang, 'control.room')}: <b>{code}</b> · {t(lang, 'control.scan')}
-          </p>
-          <input placeholder="Cadet name" value={cadetName} onChange={(e) => setCadetName(e.target.value)} />
-          <p>{ready ? t(lang, 'control.ready') : t(lang, 'control.waiting')}</p>
-          <button disabled={!ready} onClick={() => cmd({ kind: 'start' })}>
-            {t(lang, 'control.start')}
-          </button>
-          <button
-            disabled={!ready}
-            title="60 s: stand on the Moon during the real storm"
-            onClick={() => {
-              cmd({ kind: 'quickMoon' });
-              setTimeout(() => radio('sepWarning'), 1500);
-            }}
-          >
-            ⚡ {lang === 'az' ? 'Münsif rejimi: Ayda dayan (60 s)' : 'Judge mode: stand on the Moon (60 s)'}
-          </button>
-          <TodaySun lang={lang} />
-        </section>
+  const alerts = (
+    <div className="mirror-alerts">
+      {s.sun.blocked && s.switches.vsat !== 'up' && (
+        <span className="alert-chip warn">
+          <Icon name="sun" size={16} /> {lang === 'az' ? 'Günəş örtülüb' : 'Sun blocked'} · ☀ {s.power.solarInKW.toFixed(1)} kW
+        </span>
       )}
-
-      {s.phase !== 'lobby' && (
-        <section className="console">
-          <div className="row">
-            <b>{t(lang, `phase.${s.phase}`)}</b> · EVA {evaClock(s.evaStartedAt === null ? 0 : s.t - s.evaStartedAt)}
-            {s.sun.blocked && <span className="warn">☀️ SUN BLOCKED</span>}
-            {s.sep.warning && (
-              <span className="danger">
-                ☢️ SOLAR STORM {s.sep.active ? 'ACTIVE' : 'WARNING'} · SOHO protons {s.sep.protons} /(cm²·s·sr)
-              </span>
-            )}
-          </div>
-          <div className="gauges">
-            <Gauge label={`⚡ ${t(lang, 'res.power')}`} value={(s.power.batteryKWh / s.power.batteryMaxKWh) * 100} />
-            <Gauge label={`🫁 ${t(lang, 'res.o2')}`} value={s.o2.suitPct} sub={`walk-back margin ${pct(s.o2.walkbackMarginPct)}`} />
-            <Gauge label={`☢️ ${t(lang, 'res.dose')}`} value={100 - s.dose.budgetPct} sub={`${s.dose.totalMGy.toFixed(2)} mGy · ${s.dose.rateMGyPerH} mGy/h`} />
-          </div>
-          {s.phase !== 'debrief' && (
-            <div className="side">
-              <HelmetCam poseRef={poseRef} state={s} />
-              <TodaySun lang={lang} />
-            </div>
-          )}
-          <div className="switches">
-            <button onClick={() => cmd({ kind: 'raiseVsat' })} disabled={s.switches.vsat !== 'down'}>
-              ☀️ {t(lang, 'sw.vsat')}: {s.switches.vsat} {s.switches.vsat === 'raising' && pct(s.vsatProgress * 100)}
-            </button>
-            {(['antenna', 'shelter', 'greenhouse'] as const).map((k) => (
-              <button key={k} onClick={() => cmd({ kind: 'switch', key: k, on: !s.switches[k] })}>
-                {k === 'antenna' ? '📡' : k === 'shelter' ? '🛡️' : '🌱'} {t(lang, `sw.${k}`)}: {s.switches[k] ? 'ON' : 'OFF'}
-              </button>
-            ))}
-            <span>🌱 {pct(s.greenhouseHealth * 100)} · ⚡ in {s.power.solarInKW} kW / out {s.power.loadKW} kW</span>
-          </div>
-          <div className="radio">
-            {(['radioCheck', 'statusRequest', 'returnToBase', 'seekShadow', 'finishSample', 'goodJob'] as const).map((r) => (
-              <button key={r} onClick={() => radio(r)}>
-                📻 {r}
-              </button>
-            ))}
-          </div>
-          <div className="row">
-            {(s.phase === 'briefing' || s.phase === 'prep') && (
-              <button onClick={() => cmd({ kind: 'next' })}>
-                {s.phase === 'prep' ? t(lang, 'control.goEva') : t(lang, 'control.next')}
-              </button>
-            )}
-            <button onClick={() => cmd({ kind: 'endMission' })}>{t(lang, 'control.end')}</button>
-            <button onClick={() => void restart()}>↺</button>
-          </div>
-          <div className="row">
-            📍 {s.astronaut.waypointId} · {s.astronaut.distanceToBaseM} m · checklist{' '}
-            {Object.entries(s.checklist)
-              .map(([k, v]) => `${v ? '✓' : '·'}${k}`)
-              .join(' ')}
-          </div>
-          {s.phase === 'debrief' && <Debrief s={s} lang={lang} cadetName={cadetName} onRetry={() => void restart()} />}
-          <ol className="events">
-            {s.events.slice(-12).map((e, i) => (
-              <li key={i}>
-                {e.t.toFixed(1)}s · {e.actor} · {e.type} {e.payload ? JSON.stringify(e.payload) : ''}
-              </li>
-            ))}
-          </ol>
-        </section>
+      {s.sep.warning && (
+        <span className="alert-chip danger">
+          <Icon name="radiation" size={16} /> {lang === 'az' ? 'Günəş fırtınası' : 'Solar storm'} ·{' '}
+          {s.sep.active ? (lang === 'az' ? 'aktiv' : 'active') : lang === 'az' ? 'xəbərdarlıq' : 'warning'} · SOHO {s.sep.protons.toFixed(1)}
+        </span>
       )}
     </div>
   );
-}
 
-function Gauge({ label, value, sub }: { label: string; value: number; sub?: string }) {
-  const v = Math.max(0, Math.min(100, value));
+  let body;
+  if (s.phase === 'lobby') {
+    body = (
+      <Lobby
+        lang={lang}
+        qr={qr}
+        code={code}
+        cadetName={cadetName}
+        setCadetName={setCadetName}
+        ready={ready}
+        onStart={() => cmd({ kind: 'start' })}
+        onJudge={() => {
+          cmd({ kind: 'quickMoon' });
+          setTimeout(() => radio('sepWarning'), 1500);
+        }}
+        pre={pre}
+        onPreDone={(a) => {
+          setPreAnswers(a);
+          setPre('done');
+        }}
+        onPreSkip={() => setPre('skipped')}
+      />
+    );
+  } else if (s.phase === 'debrief') {
+    body = (
+      <Debrief
+        s={s}
+        lang={lang}
+        cadetName={cadetName}
+        onRetry={() => void restart()}
+        pre={preAnswers}
+        post={postAnswers}
+        stats={stats}
+        onPostDone={onPostDone}
+      />
+    );
+  } else if (broadcast) {
+    body = (
+      <main className="bc">
+        <MirrorView stream={stream} poseRef={poseRef} state={s} lang={lang} broadcast>
+          {alerts}
+        </MirrorView>
+        <div className="bc-shade" />
+        <div className="bc-right">{s.sep.warning ? <ProtonChart s={s} lang={lang} /> : <Gauges s={s} lang={lang} compact />}</div>
+        <Banners banners={banners} big />
+        <div className="bc-bottom">
+          {s.phase === 'briefing' && <ChallengeStrip lang={lang} />}
+          <Caption obj={obj} lang={lang} phaseLabel={stepName} />
+        </div>
+        <div className="bc-dock">
+          {(s.phase === 'briefing' || s.phase === 'prep') && (
+            <button className="btn primary" onClick={() => cmd({ kind: 'next' })}>
+              <Icon name={s.phase === 'prep' ? 'play' : 'next'} size={16} />
+              {s.phase === 'prep' ? t(lang, 'control.goEva') : t(lang, 'control.next')}
+            </button>
+          )}
+        </div>
+      </main>
+    );
+  } else {
+    body = (
+      <main className="op">
+        <div className="op-left">
+          <MirrorView stream={stream} poseRef={poseRef} state={s} lang={lang}>
+            {alerts}
+            <Banners banners={banners} />
+          </MirrorView>
+          <div className="op-bottom">
+            <MapCard s={s} lang={lang} />
+            <EventFeed s={s} lang={lang} />
+          </div>
+        </div>
+        <div className="op-right">
+          <NowCard s={s} lang={lang} obj={obj} cmd={cmd} onRestart={() => void restart()} />
+          <section className="card gauges-card">
+            <Gauges s={s} lang={lang} />
+          </section>
+          <Systems s={s} lang={lang} cmd={cmd} />
+          <Radio s={s} lang={lang} last={lastRadio} onSend={radio} />
+        </div>
+      </main>
+    );
+  }
+
   return (
-    <div className="gauge">
-      <div>{label}</div>
-      <div className="bar">
-        <div style={{ width: `${v}%`, background: v > 50 ? '#3ddc84' : v > 20 ? '#ffc847' : '#ff5a4f' }} />
-      </div>
-      {sub && <small>{sub}</small>}
+    <div className={`mc ${broadcast ? 'is-bc' : 'is-op'} phase-${s.phase}`}>
+      {header}
+      {showData && <NasaDataPanel lang={lang} onClose={() => setShowData(false)} />}
+      {body}
     </div>
   );
 }
