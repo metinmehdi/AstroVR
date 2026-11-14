@@ -64,6 +64,14 @@ export interface SimEvent {
   payload?: Record<string, unknown>;
 }
 
+/** Rocket flight to the Moon before the briefing (story mode). null = no flight (judge mode, skipped). */
+export interface FlightState {
+  status: 'pad' | 'flying' | 'landed';
+  short: boolean;
+  /** sim time (s) of the last status change */
+  at: number;
+}
+
 export interface SimState {
   version: 1;
   phase: Phase;
@@ -107,6 +115,7 @@ export interface SimState {
   evaStartedAt: number | null;
   /** real seconds when the phase last changed */
   phaseStartedAt: number;
+  flight: FlightState | null;
   events: SimEvent[];
 }
 

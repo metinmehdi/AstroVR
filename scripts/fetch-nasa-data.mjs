@@ -489,6 +489,50 @@ await step('LOLA horizon ring', async () => {
   });
 });
 
+// 12) Story intro imagery (real NASA photos, no logos, no people): Apollo 8 "Earthrise", Apollo 11 bootprint,
+//     and NASA SDO's view of the REAL 11 May 2024 flare near its peak (the storm the game replays)
+await step('Story images', async () => {
+  const items = [];
+  for (const p of [
+    { id: 'as08-14-2383', file: 'public/images/story-earthrise.jpg', note: 'Apollo 8 "Earthrise", 24 Dec 1968' },
+    { id: 'as11-40-5878', file: 'public/images/story-bootprint.jpg', note: 'Apollo 11 bootprint in the lunar regolith, 20 Jul 1969' },
+  ]) {
+    const meta = await get(`https://images-api.nasa.gov/search?nasa_id=${p.id}`);
+    const item = meta.collection.items[0];
+    if (!item) throw new Error(`no NASA image ${p.id}`);
+    const assets = await get(item.href);
+    const url = assets.find((u) => u.includes('~large.jpg')) ?? assets.find((u) => u.includes('~medium.jpg')) ?? assets.find((u) => u.endsWith('.jpg'));
+    await save(p.file, await get(url.replace('http://', 'https://'), 'buffer'));
+    items.push({ nasaId: p.id, title: item.data[0].title, url, file: p.file, note: p.note });
+  }
+  // SDO AIA browse images, 11 May 2024 (flare 2024-05-11T01:10:00-FLR-001, X5.8, peak ~01:23 UTC)
+  for (const f of [
+    { name: '20240511_012532_1024_0131.jpg', file: 'public/images/story-sdo-0131.jpg', note: 'SDO/AIA 131 Å, 11 May 2024 01:25 UTC — the X5.8 flare near its peak' },
+    { name: '20240511_012906_1024_0304.jpg', file: 'public/images/story-sdo-0304.jpg', note: 'SDO/AIA 304 Å, 11 May 2024 01:29 UTC' },
+  ]) {
+    const url = `https://sdo.gsfc.nasa.gov/assets/img/browse/2024/05/11/${f.name}`;
+    await save(f.file, await get(url, 'buffer'));
+    items.push({ url, file: f.file, note: f.note });
+  }
+  await save('src/data/story-images.json', { source: 'NASA Image and Video Library; NASA SDO (AIA browse archive)', fetchedAt: now, items });
+  manifest.push(
+    {
+      id: 'story-apollo',
+      name: 'Apollo 8 "Earthrise" (AS08-14-2383) and Apollo 11 bootprint (AS11-40-5878)',
+      org: 'NASA',
+      url: 'https://images.nasa.gov/',
+      usedFor: 'Story intro: the history of people on the Moon',
+    },
+    {
+      id: 'story-sdo',
+      name: 'NASA SDO/AIA images of the Sun on 11 May 2024 at 01:25–01:29 UTC (the real X5.8 flare)',
+      org: 'NASA GSFC Solar Dynamics Observatory',
+      url: 'https://sdo.gsfc.nasa.gov/data/',
+      usedFor: 'Story intro: "a storm is waking up" is the real flare that starts the game\'s storm',
+    },
+  );
+});
+
 // Facts read by the research agent from NASA documents (not fetched as data files)
 manifest.push(
   { id: 'diviner', name: 'LRO Diviner surface temperature at the site: average ~130 K, maximum ~236–263 K; permanently shadowed craters ~25–40 K', org: 'NASA LRO Diviner (PDS Polar Resource Product)', url: 'https://pds-geosciences.wustl.edu/lro/urn-nasa-pds-lro_diviner_derived1/', usedFor: 'Reference fact shown in the science notes (not yet in the game mechanics)' },

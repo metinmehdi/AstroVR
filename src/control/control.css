@@ -1961,3 +1961,74 @@ input:focus {
     transition: none !important;
   }
 }
+
+/* ---- story intro (projector) + lobby options */
+.story-opts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 10px;
+  align-items: center;
+}
+.story-opts .btn {
+  justify-content: center;
+}
+.story-opts .chk {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: var(--muted);
+  cursor: pointer;
+}
+.story-opts .chk input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent);
+}
+.story-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.story-host,
+.story-host canvas {
+  width: 100%;
+  height: 100%;
+}
+.story-host canvas {
+  display: block;
+  object-fit: contain;
+}
+.story-loading {
+  position: absolute;
+  color: #ff9a4a;
+  font: 800 2.4rem system-ui, sans-serif;
+  letter-spacing: 0.3em;
+  opacity: 0.6;
+  animation: story-pulse 1.4s ease-in-out infinite;
+}
+@keyframes story-pulse {
+  50% {
+    opacity: 0.15;
+  }
+}
+.story-skip {
+  position: absolute;
+  right: 24px;
+  bottom: 20px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #cfd8e3;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 999px;
+  padding: 8px 18px;
+  font: 600 0.9rem system-ui, sans-serif;
+  cursor: pointer;
+  opacity: 0.55;
+}
+.story-skip:hover {
+  opacity: 1;
+}

@@ -9,7 +9,7 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { RADIO, SUIT } from '../src/audio/lines.ts';
+import { FLIGHT, RADIO, STORY, SUIT } from '../src/audio/lines.ts';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const KEY = process.env.OPENAI_API_KEY;
@@ -19,6 +19,8 @@ if (!KEY) {
 }
 const MODEL = process.env.TTS_MODEL || 'gpt-4o-mini-tts';
 const langs = process.argv.slice(2).filter((a) => a === 'en' || a === 'az');
+// optional filter: `node --env-file=.env scripts/generate-voices.mjs story flight` → only those groups
+const groups = process.argv.slice(2).filter((a) => ['radio', 'suit', 'story', 'flight'].includes(a));
 const LANGS = langs.length ? langs : ['en', 'az'];
 
 const VOICES = {
@@ -26,6 +28,15 @@ const VOICES = {
     voice: 'onyx',
     instructions:
       'You are NASA Mission Control (CAPCOM) talking to a child astronaut on the Moon over the radio. Calm, warm, clear, confident, short pauses. Not dramatic.',
+  },
+  story: {
+    voice: 'onyx',
+    instructions:
+      'You are the narrator of an epic space movie trailer. Deep, slow, powerful and full of wonder. Leave dramatic pauses at the "…" marks. Build tension, then hope. Never rush.',
+  },
+  flight: {
+    voice: 'onyx',
+    instructions: 'You are launch control talking to a young astronaut inside the rocket. Confident and exciting, clear numbers, a little faster on "Liftoff!".',
   },
   suit: {
     voice: 'nova',
@@ -56,7 +67,9 @@ const available = JSON.parse(await readFile(availPath, 'utf8'));
 const jobs = [
   ...Object.entries(RADIO).map(([id, t]) => ({ id, t, kind: 'radio' })),
   ...Object.entries(SUIT).map(([id, t]) => ({ id, t, kind: 'suit' })),
-];
+  ...Object.entries(STORY).map(([id, t]) => ({ id, t, kind: 'story' })),
+  ...Object.entries(FLIGHT).map(([id, t]) => ({ id, t, kind: 'flight' })),
+].filter((j) => !groups.length || groups.includes(j.kind));
 for (const lang of LANGS) {
   await mkdir(join(ROOT, 'public/audio', lang), { recursive: true });
   const ok = new Set(available[lang] ?? []);

@@ -5,6 +5,7 @@
  *  - Broadcast (key B): projector/judges — full-bleed astronaut view, captions, REAL DATA chart, event banners.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { StoryIntro } from './StoryIntro';
 import QRCode from 'qrcode';
 import { createTransport, type Transport } from '../shared/transport';
 import { astronautUrl, makeId, makeRoomCode, STATE_PUBLISH_HZ } from '../shared/protocol';
@@ -47,6 +48,11 @@ export function App() {
   const [lastRadio, setLastRadio] = useState<LastRadio | null>(null);
   // quiz (measurable impact): pre in the lobby (optional), post in the debrief
   const [pre, setPre] = useState<'open' | 'done' | 'skipped'>('open');
+  // story intro + rocket flight
+  const urlFlags = useMemo(() => new URLSearchParams(location.search), []);
+  const [storyOn, setStoryOn] = useState(() => urlFlags.get('story') !== '0');
+  const [shortFlight, setShortFlight] = useState(() => urlFlags.get('pitch') === '1');
+  const [story, setStory] = useState<null | 'preview' | 'start' | 'record'>(null);
   const [preAnswers, setPreAnswers] = useState<number[] | null>(null);
   const [postAnswers, setPostAnswers] = useState<number[] | null>(null);
   const [stats, setStats] = useState<QuizStats>(() => loadStats());
@@ -197,7 +203,19 @@ export function App() {
         cadetName={cadetName}
         setCadetName={setCadetName}
         ready={ready}
-        onStart={() => cmd({ kind: 'start' })}
+        onStart={() => {
+          cmd({ kind: 'start' }); // the cadet waits in the capsule on the pad
+          if (storyOn) setStory('start');
+          else cmd({ kind: 'launch', short: shortFlight });
+        }}
+        story={{
+          on: storyOn,
+          setOn: setStoryOn,
+          short: shortFlight,
+          setShort: setShortFlight,
+          play: () => setStory('preview'),
+          record: urlFlags.get('record') === '1' ? () => setStory('record') : undefined,
+        }}
         onJudge={() => {
           cmd({ kind: 'quickMoon' });
           setTimeout(() => radio('sepWarning'), 1500);
@@ -276,6 +294,16 @@ export function App() {
       {header}
       {showData && <NasaDataPanel lang={lang} onClose={() => setShowData(false)} />}
       {body}
+      {story && (
+        <StoryIntro
+          lang={lang}
+          record={story === 'record'}
+          onEnd={() => {
+            if (story === 'start') cmd({ kind: 'launch', short: shortFlight });
+            setStory(null);
+          }}
+        />
+      )}
     </div>
   );
 }

@@ -19,6 +19,7 @@ export function Lobby({
   pre,
   onPreDone,
   onPreSkip,
+  story,
 }: {
   lang: Lang;
   qr: string;
@@ -31,7 +32,16 @@ export function Lobby({
   pre: 'open' | 'done' | 'skipped';
   onPreDone: (a: number[]) => void;
   onPreSkip: () => void;
+  story: {
+    on: boolean;
+    setOn: (v: boolean) => void;
+    short: boolean;
+    setShort: (v: boolean) => void;
+    play: () => void;
+    record?: () => void;
+  };
 }) {
+  const az = lang === 'az';
   return (
     <main className="lobby">
       <div className="lobby-hero">
@@ -75,6 +85,24 @@ export function Lobby({
               <Icon name="play" size={22} />
               {t(lang, 'control.start')}
             </button>
+            <div className="story-opts">
+              <button className="btn ghost" onClick={story.play} title={az ? 'Proyektor üçün 35 saniyəlik hekayə' : '35-second story for the projector'}>
+                <Icon name="play" size={16} /> {az ? 'Hekayə (35 s)' : 'Story (35 s)'}
+              </button>
+              {story.record && (
+                <button className="btn ghost" onClick={story.record}>
+                  ⏺ {az ? 'Videoya yaz' : 'Record video'}
+                </button>
+              )}
+              <label className="chk">
+                <input type="checkbox" checked={story.on} onChange={(e) => story.setOn(e.target.checked)} />
+                <span>{az ? 'START-da əvvəl hekayə' : 'Story before liftoff'}</span>
+              </label>
+              <label className="chk">
+                <input type="checkbox" checked={story.short} onChange={(e) => story.setShort(e.target.checked)} />
+                <span>{az ? 'Qısa uçuş 20 s (pitch)' : 'Short flight 20 s (pitch)'}</span>
+              </label>
+            </div>
             <button className="btn judge" disabled={!ready} onClick={onJudge} title={tr(lang, 'lobby.judgeSub')}>
               <Icon name="lightning" size={18} />
               <span>

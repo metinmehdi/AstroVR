@@ -1,5 +1,5 @@
 {
- "generatedAt": "2026-11-14T13:58:01.445Z",
+ "generatedAt": "2026-11-14T16:06:52.385Z",
  "site": {
   "name": "Nobile Rim 1 (sunniest point)",
   "lat": -85.3003,
@@ -89,6 +89,20 @@
    "org": "NASA LRO LOLA (PDS Geosciences)",
    "url": "https://pds-geosciences.wustl.edu/missions/lro/lola.htm",
    "usedFor": "The horizon you see in VR is the real south-pole landscape; dark areas are in real shadow at the mission time"
+  },
+  {
+   "id": "story-apollo",
+   "name": "Apollo 8 \"Earthrise\" (AS08-14-2383) and Apollo 11 bootprint (AS11-40-5878)",
+   "org": "NASA",
+   "url": "https://images.nasa.gov/",
+   "usedFor": "Story intro: the history of people on the Moon"
+  },
+  {
+   "id": "story-sdo",
+   "name": "NASA SDO/AIA images of the Sun on 11 May 2024 at 01:25–01:29 UTC (the real X5.8 flare)",
+   "org": "NASA GSFC Solar Dynamics Observatory",
+   "url": "https://sdo.gsfc.nasa.gov/data/",
+   "usedFor": "Story intro: \"a storm is waking up\" is the real flare that starts the game's storm"
   },
   {
    "id": "diviner",

@@ -5,6 +5,7 @@
  */
 import type { Lang } from '../shared/types';
 import available from './available.json';
+import { Score } from './score';
 
 /** Voice files that exist in public/audio/{lang}/ (P5: add the id here after adding the mp3). Others use browser speech. */
 const HAS_FILE: Record<Lang, Set<string>> = { en: new Set(available.en as string[]), az: new Set(available.az as string[]) };
@@ -19,6 +20,7 @@ export class SuitAudio {
   private doseRate = 0; // mGy/h
   private stress = 0; // 0..1
   private speaking = Promise.resolve();
+  private cinematic: Score | null = null;
   lang: Lang = 'en';
 
   /** Must be called from a user gesture (the START button). */
@@ -128,6 +130,13 @@ export class SuitAudio {
     src.connect(hp).connect(g).connect(this.master);
     src.start(t, Math.random());
     src.stop(t + 0.015);
+  }
+
+  /** Synthesized cinematic sounds (rocket rumble, space pads) on the suit's audio graph. Null before unlock(). */
+  score(): Score | null {
+    if (!this.ctx) return null;
+    if (!this.cinematic) this.cinematic = new Score(this.ctx, this.master);
+    return this.cinematic;
   }
 
   /** A footstep felt through the suit (low thud), called on each lope hop. */

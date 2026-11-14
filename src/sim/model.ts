@@ -17,6 +17,7 @@ import type {
   Waypoint,
 } from '../shared/types';
 import { CHECKLIST_ITEMS } from '../shared/types';
+import { flightTotalS } from '../shared/flight';
 import * as C from './constants';
 
 export type ControlCommand =
@@ -27,7 +28,9 @@ export type ControlCommand =
   | { kind: 'radio'; msgId: string; type: RadioMessageType }
   | { kind: 'endMission' }
   /** Judge mode ("Stand on the Moon", 60 s): straight onto the surface, joining the REAL storm 45 s after its warning */
-  | { kind: 'quickMoon' };
+  | { kind: 'quickMoon' }
+  /** after the story intro: the rocket lifts off (short = 20 s pitch version) */
+  | { kind: 'launch'; short?: boolean };
 
 const SITES: SiteId[] = ['siteA', 'siteB'];
 
@@ -58,6 +61,7 @@ export function createInitialState(_scenario?: Scenario): SimState {
     comms: { sent: 0, lost: 0, acked: 0, pending: {} },
     evaStartedAt: null,
     phaseStartedAt: 0,
+    flight: null,
     events: [],
   };
 }
@@ -250,9 +254,19 @@ export const QUICK_MOON_WARNING_AGO_S = 45;
 export function applyControl(s: SimState, cmd: ControlCommand, scenario?: Scenario) {
   switch (cmd.kind) {
     case 'start':
+      if (s.phase === 'lobby') {
+        setPhase(s, 'briefing');
+        s.flight = { status: 'pad', short: false, at: s.t }; // the cadet waits in the capsule during the story
+      }
+      return;
+    case 'launch':
       if (s.phase === 'lobby') setPhase(s, 'briefing');
+      if (s.phase !== 'briefing' || s.flight?.status === 'flying' || s.flight?.status === 'landed') return;
+      s.flight = { status: 'flying', short: Boolean(cmd.short), at: s.t };
+      log(s, 'control', 'launch', { short: Boolean(cmd.short) });
       return;
     case 'next':
+      if (s.flight && s.flight.status !== 'landed') s.flight = { ...s.flight, status: 'landed', at: s.t };
       if (s.phase === 'briefing') setPhase(s, 'prep');
       else if (s.phase === 'prep') {
         log(s, 'control', 'goForEva', {
@@ -308,7 +322,14 @@ export function step(s: SimState, dt: number, scenario: Scenario) {
   s.t += dt;
 
   // --- phase timers
-  if (s.phase === 'briefing' && s.t - s.phaseStartedAt >= C.BRIEFING_S) setPhase(s, 'prep');
+  // rocket flight: lands after liftoff + transit + descent; the briefing clock starts on the Moon
+  if (s.flight?.status === 'flying' && s.t - s.flight.at >= flightTotalS(s.flight.short)) {
+    s.flight = { ...s.flight, status: 'landed', at: s.t };
+    log(s, 'system', 'landed');
+    if (s.phase === 'briefing') s.phaseStartedAt = s.t;
+  }
+  const onMoon = !s.flight || s.flight.status === 'landed';
+  if (s.phase === 'briefing' && onMoon && s.t - s.phaseStartedAt >= C.BRIEFING_S) setPhase(s, 'prep');
   if (s.phase === 'prep' && CHECKLIST_ITEMS.every((i) => s.checklist[i])) setPhase(s, 'surface');
 
   const e = evaT(s);

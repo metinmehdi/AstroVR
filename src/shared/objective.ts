@@ -38,6 +38,11 @@ export function currentObjective(s: SimState | null, opts: { radioCheckPending?:
   if (s.phase === 'debrief') {
     return { id: 'debrief', phaseStep: 5, icon: '🏅', astro: T('Mission complete! Look at Mission Control', 'Missiya tamamlandı! Missiya İdarəsinə bax'), control: T('Evaluation: stars, decisions and the real storm', 'Qiymətləndirmə: ulduzlar, qərarlar və real fırtına'), targets: [] };
   }
+  if (s.phase === 'briefing' && s.flight && s.flight.status !== 'landed') {
+    return s.flight.status === 'pad'
+      ? { id: 'pad', phaseStep: 1, icon: '🚀', astro: T('On the launch pad. Liftoff soon!', 'Start meydançasındasan. Tezliklə start!'), control: T('The cadet is in the capsule. The story plays, then liftoff', 'Kursant kapsuldadır. Hekayədən sonra start'), targets: [] }
+      : { id: 'flight', phaseStep: 1, icon: '🚀', astro: T('Flying to the Moon', 'Aya uçuruq'), control: T('Rocket flight: 384,400 km, 3 days in seconds', 'Raket uçuşu: 384 400 km, 3 gün saniyələrdə'), targets: [] };
+  }
   if (s.phase === 'briefing' || s.phase === 'prep') {
     const step = s.phase === 'briefing' ? 1 : 2;
     if (!s.checklist.lookTraining) return { id: 'look', phaseStep: step, icon: '✨', astro: T('Turn your head and look at the light', 'Başını çevir və işığa bax'), control: T('The cadet learns to select by looking', 'Kursant baxışla seçməyi öyrənir'), targets: ['check:lookTraining'] };

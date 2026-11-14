@@ -56,6 +56,7 @@ export class AstronautMission {
   private guide: Guide;
   private fx: Effects;
   private hopSide = 1;
+  private inFlight = false;
   private intro: { t: number; dur: number; title: THREE.Mesh } | null = null;
   private wristAcc = 0;
 
@@ -266,7 +267,7 @@ export class AstronautMission {
   private updateLope(dt: number) {
     const m = (this.vignette.material as THREE.MeshBasicMaterial);
     if (!this.lope) {
-      m.opacity = Math.max(0, m.opacity - dt * 2);
+      m.opacity = Math.min(0.45, Math.max(0, m.opacity - dt * 2));
       return;
     }
     const L0 = this.lope;
@@ -284,7 +285,7 @@ export class AstronautMission {
     }
     p.y = ground + Math.abs(Math.sin(hopPhase * Math.PI)) * HOP_H; // 1/6 g bunny-hop
     this.c.rig.position.copy(p);
-    m.opacity = Math.min(0.45, m.opacity + dt * 3); // comfort vignette
+    m.opacity = Math.max(0, Math.min(0.45, m.opacity + dt * 3)); // comfort vignette
     if (u >= 1) {
       this.localWp = L0.wp;
       this.lope = null;
@@ -445,8 +446,8 @@ export class AstronautMission {
     const e = u * u * (3 - 2 * u); // ease in-out
     const a = this.wp('airlock');
     const end = new THREE.Vector3(a.x, this.ground(a.x, a.z) + EYE, a.z);
-    const start = new THREE.Vector3(a.x + 40, end.y + 140, a.z + 110);
-    const mid = new THREE.Vector3(a.x + 8, end.y + 30, a.z + 26);
+    const start = new THREE.Vector3(a.x + 22, end.y + 48, a.z + 70);
+    const mid = new THREE.Vector3(a.x + 6, end.y + 14, a.z + 20);
     // quadratic Bezier start → mid → end
     const p = start.clone().multiplyScalar((1 - e) * (1 - e)).add(mid.clone().multiplyScalar(2 * (1 - e) * e)).add(end.clone().multiplyScalar(e * e));
     this.c.rig.position.copy(p);
@@ -479,13 +480,25 @@ export class AstronautMission {
     this.audio.lang = this.c.getLang();
   }
 
+  /** While the cadet is in the rocket (Flight), the Moon mission UI sleeps (no gaze, no HUD). */
+  setInFlight(v: boolean) {
+    if (v === this.inFlight) return;
+    this.inFlight = v;
+    if (v) this.guide.hideAll();
+  }
+
   update(dt: number) {
     const s = this.c.getState();
     const lang = this.c.getLang();
     this.audio.lang = lang;
+    if (this.inFlight) {
+      this.guide.hideAll();
+      return;
+    }
 
-    // first state → welcome
-    if (s && s.phase === 'briefing' && !this.flags.has('welcome')) {
+    // first state on the Moon → welcome
+    const onMoon = !s?.flight || s.flight.status === 'landed';
+    if (s && s.phase === 'briefing' && onMoon && !this.intro && !this.flags.has('welcome')) {
       this.flags.add('welcome');
       void this.audio.suit('welcome', lineText(SUIT, 'welcome', lang));
     }

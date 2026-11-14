@@ -4,6 +4,7 @@ import type { SimState } from '../shared/types';
 import { applyAction, applyControl, createInitialState, protonsAt, step } from './model';
 import { computeDebrief } from './scoring';
 import * as C from './constants';
+import { flightTotalS } from '../shared/flight';
 
 function run(s: SimState, seconds: number, dt = 0.25) {
   for (let i = 0; i < seconds / dt; i++) step(s, dt, SC);
@@ -25,10 +26,40 @@ function walk(s: SimState, ids: string[]) {
 }
 
 describe('phases', () => {
+  it('story mode: waits on the pad, launches, lands after the flight, then the briefing clock starts', () => {
+    const s = createInitialState(SC);
+    applyControl(s, { kind: 'start' });
+    expect(s.flight?.status).toBe('pad');
+    run(s, C.BRIEFING_S + 5); // the story is still playing: never skip the briefing from the pad
+    expect(s.phase).toBe('briefing');
+    applyControl(s, { kind: 'launch', short: false });
+    expect(s.flight?.status).toBe('flying');
+    run(s, flightTotalS(false) - 1);
+    expect(s.flight?.status).toBe('flying');
+    run(s, 2);
+    expect(s.flight?.status).toBe('landed');
+    expect(s.phase).toBe('briefing');
+    run(s, C.BRIEFING_S + 1);
+    expect(s.phase).toBe('prep');
+    expect(s.events.map((e) => e.type)).toEqual(expect.arrayContaining(['launch', 'landed']));
+  });
+
+  it('judge mode and NEXT skip the flight', () => {
+    const q = createInitialState(SC);
+    applyControl(q, { kind: 'quickMoon' }, SC);
+    expect(q.flight).toBeNull();
+    const s = createInitialState(SC);
+    applyControl(s, { kind: 'start' });
+    applyControl(s, { kind: 'next' });
+    expect(s.flight?.status).toBe('landed');
+    expect(s.phase).toBe('prep');
+  });
+
   it('briefing auto-advances to prep, completed checklist opens the hatch', () => {
     const s = createInitialState(SC);
     applyControl(s, { kind: 'start' });
-    run(s, C.BRIEFING_S + 1);
+    applyControl(s, { kind: 'launch', short: true });
+    run(s, flightTotalS(true) + C.BRIEFING_S + 1);
     expect(s.phase).toBe('prep');
     const t = toSurface();
     expect(t.phase).toBe('surface');

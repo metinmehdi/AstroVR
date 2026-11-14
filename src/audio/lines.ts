@@ -43,6 +43,34 @@ export const SUIT: Lines = {
   inShelter: { en: 'You are in the shelter. The walls protect you.', az: 'Sığınacaqdasan. Divarlar səni qoruyur.' },
 };
 
+/** Story intro (campaign-style, ~35 s): deep movie-trailer narrator. Facts are real (12 Moon walkers 1969–1972,
+ * polar ice in craters unlit for billions of years, the real 11 May 2024 flare). */
+export const STORY: Lines = {
+  story1: { en: 'For thousands of years, we looked up at the Moon… and dreamed.', az: 'Minlərlə il insanlar Aya baxıb… xəyal qurub.' },
+  story2: {
+    en: 'From 1969 to 1972, twelve people walked on it. Then… we stopped.',
+    az: '1969-cu ildən 1972-ci ilə qədər on iki insan orada gəzdi. Sonra… dayandıq.',
+  },
+  story3: {
+    en: 'Now we are going back… to the south pole, where ice hides in craters that never see the Sun.',
+    az: 'İndi geri qayıdırıq… cənub qütbünə. Orada Günəş heç düşməyən kraterlərdə buz gizlənir.',
+  },
+  story4: { en: 'You have trained for years, cadet. Today… it is your turn.', az: 'İllərdir buna hazırlaşırsan, kursant. Bu gün… növbə səndədir.' },
+  story5: { en: 'But on the Sun… a storm is waking up.', az: 'Amma Günəşdə… bir fırtına oyanır.' },
+  story6: { en: 'AstroVR. My first Moon mission.', az: 'AstroVR. Mənim ilk Ay missiyam.' },
+};
+
+/** Rocket flight (launch control, inside the capsule). */
+export const FLIGHT: Lines = {
+  countdown: { en: 'Five. Four. Three. Two. One. Liftoff! We have liftoff!', az: 'Beş. Dörd. Üç. İki. Bir. Start! Raket havaya qalxdı!' },
+  inSpace: { en: 'Engines off. You are in space. Look to your left: that is our Earth.', az: 'Mühərriklər söndü. Kosmosdasan. Sola bax: bu, bizim Yerdir.' },
+  transit: {
+    en: 'Three days and three hundred eighty-four thousand kilometres to the Moon.',
+    az: 'Aya qədər üç gün və üç yüz səksən dörd min kilometr.',
+  },
+  arrival: { en: 'Moon arrival. Starting the descent to the south pole.', az: 'Aya çatdıq. Cənub qütbünə enməyə başlayırıq.' },
+};
+
 export function lineText(table: Lines | typeof RADIO, id: string, lang: Lang): string {
   const l = (table as Lines)[id];
   return l ? l[lang] : id;

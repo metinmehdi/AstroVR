@@ -1,0 +1,30 @@
+{
+ "source": "NASA Image and Video Library; NASA SDO (AIA browse archive)",
+ "fetchedAt": "2026-11-14T16:06:52.385Z",
+ "items": [
+  {
+   "nasaId": "as08-14-2383",
+   "title": "Apollo 8 Mission image, Earth over the horizon of the moon",
+   "url": "http://images-assets.nasa.gov/image/as08-14-2383/as08-14-2383~large.jpg",
+   "file": "public/images/story-earthrise.jpg",
+   "note": "Apollo 8 \"Earthrise\", 24 Dec 1968"
+  },
+  {
+   "nasaId": "as11-40-5878",
+   "title": "Close-up view of astronauts footprint in lunar soil",
+   "url": "http://images-assets.nasa.gov/image/as11-40-5878/as11-40-5878~large.jpg",
+   "file": "public/images/story-bootprint.jpg",
+   "note": "Apollo 11 bootprint in the lunar regolith, 20 Jul 1969"
+  },
+  {
+   "url": "https://sdo.gsfc.nasa.gov/assets/img/browse/2024/05/11/20240511_012532_1024_0131.jpg",
+   "file": "public/images/story-sdo-0131.jpg",
+   "note": "SDO/AIA 131 Å, 11 May 2024 01:25 UTC — the X5.8 flare near its peak"
+  },
+  {
+   "url": "https://sdo.gsfc.nasa.gov/assets/img/browse/2024/05/11/20240511_012906_1024_0304.jpg",
+   "file": "public/images/story-sdo-0304.jpg",
+   "note": "SDO/AIA 304 Å, 11 May 2024 01:29 UTC"
+  }
+ ]
+}

@@ -16,6 +16,7 @@ import { StereoRenderer } from './stereo';
 import { AstronautMission } from './mission';
 import { addVisor } from './visor';
 import { MirrorTap, startMirrorSender } from '../shared/rtc';
+import { Flight } from './flight';
 
 const params = new URLSearchParams(location.search);
 const quality: Quality = params.get('q') === 'high' ? 'high' : 'low';
@@ -98,6 +99,40 @@ async function main() {
     setTimeout(() => mission.onRadio(msg), COMM_DELAY_MS);
   });
 
+  // rocket flight to the Moon (story mode): the cadet waits in the capsule, Mission Control launches after the story
+  const flight = new Flight(camera, rig, mission.audio, () => lang);
+  let started = false;
+  const skipFlight = params.get('intro') === '0';
+  const syncFlight = () => {
+    const s = state;
+    if (!started || !s) return;
+    if (s.phase === 'lobby' && flight.done && !flight.active) flight.reset(); // Mission Control restarted
+    if (skipFlight) {
+      if (!flight.done) flight.abort();
+      return;
+    }
+    if (flight.isFlying || flight.done) return; // a flight in progress always finishes, then the descent starts
+    const f = s.flight;
+    if (s.phase === 'lobby' || (s.phase === 'briefing' && f?.status === 'pad')) {
+      flight.enterPad();
+      mission.setInFlight(true);
+      return;
+    }
+    if (s.phase === 'briefing' && f?.status === 'flying') {
+      mission.setInFlight(true);
+      flight.launch(f.short, Math.max(0, s.t - f.at), () => {
+        mission.setInFlight(false);
+        mission.startIntro(); // descent to the airlock over the real terrain
+      });
+      return;
+    }
+    // no flight in this mission (judge mode, NEXT pressed, joined later)
+    const wasInCapsule = flight.active;
+    flight.abort();
+    mission.setInFlight(false);
+    if (wasInCapsule && s.phase === 'briefing') mission.startIntro();
+  };
+
   const stereo = new StereoRenderer(renderer);
   stereo.enabled = params.get('mono') !== '1';
   const mirrorTap = new MirrorTap(20, 540);
@@ -131,7 +166,7 @@ async function main() {
     transport.sendAction({ kind: 'ready' });
     // live mirror: Mission Control sees exactly this canvas (UI, visor, everything)
     startMirrorSender(transport, mirrorTap.stream);
-    if (params.get('intro') !== '0') mission.startIntro();
+    started = true; // the capsule / flight / descent follow the mission state (syncFlight)
   };
   loaded = true;
   startBtn.disabled = false;
@@ -149,11 +184,13 @@ async function main() {
   const timer = new THREE.Timer();
   renderer.setAnimationLoop((now) => {
     timer.update(now);
-    const dt = Math.min(timer.getDelta(), 0.1);
+    const dt = Math.max(0, Math.min(timer.getDelta(), 0.1)); // never negative (rAF timestamps can step back)
     head.update();
     moon.update(dt, state);
+    syncFlight();
+    flight.update(dt);
     mission.update(dt);
-    stereo.render(moon.scene, camera);
+    stereo.render(flight.active ? flight.scene : moon.scene, camera);
     mirrorTap.capture(renderer.domElement, stereo.enabled, now);
   });
 }

@@ -133,6 +133,10 @@ export function describeEvent(e: SimEvent, lang: Lang): EventText | null {
       return { icon: '📻', text: L(`CAPCOM: “${radioLabel(lang, String(p.type))}” sent`, `CAPCOM: “${radioLabel(lang, String(p.type))}” göndərildi`), tone: 'info', key: false };
     case 'radioLost':
       return { icon: '📵', text: L(`Radio call lost (antenna OFF): “${radioLabel(lang, String(p.type))}”`, `Radio mesajı itdi (antenna sönük): “${radioLabel(lang, String(p.type))}”`), tone: 'danger', key: true };
+    case 'launch':
+      return { icon: '🚀', text: L('LIFTOFF! The rocket is on its way to the Moon', 'START! Raket Aya yola düşdü'), tone: 'ok', key: true };
+    case 'landed':
+      return { icon: '🌕', text: L('Landed at the south pole — welcome to the Moon', 'Cənub qütbünə endik — Aya xoş gəldin'), tone: 'ok', key: true };
     case 'sunBlocked':
       return { icon: '🌑', text: L('Low Sun: a ridge shades the low solar panels — power 4.0 → 0.4 kW', 'Alçaq Günəş: silsilə alçaq panelləri kölgələdi — enerji 4.0 → 0.4 kVt'), tone: 'warn', key: true };
     case 'sepWarning':
