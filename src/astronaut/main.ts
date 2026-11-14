@@ -61,9 +61,9 @@ async function main() {
   const rig = new THREE.Object3D();
   rig.add(camera);
   // helmet lamp: Artemis suits carry lights for the dark south-pole shadows
-  const lamp = new THREE.SpotLight(0xfff3dd, 6, 30, 0.55, 0.5, 1.2);
+  const lamp = new THREE.SpotLight(0xfff3dd, 28, 45, 0.78, 0.6, 1);
   lamp.position.set(0, 0.15, 0);
-  lamp.target.position.set(0, -0.6, -4);
+  lamp.target.position.set(0, -1.2, -6);
   camera.add(lamp, lamp.target);
   if (params.get('visor') !== '0') addVisor(camera);
   const moon = createMoonScene(SCENARIO, quality);
