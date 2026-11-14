@@ -50,6 +50,9 @@ export class AstronautMission {
   private stormButtons: THREE.Object3D[] = [];
   private sampleUI = new Map<SiteId, { photo: Button3D; collect: Button3D; mark: Button3D }>();
   private beacons = new Map<string, Button3D>();
+  /** invisible, generous hit areas for movement: the light beam column and the ground path (a small far label is hard to hold with a phone gyro) */
+  private pathHit!: THREE.Mesh;
+  private pathTarget: string | null = null;
   private guide: Guide;
   private fx: Effects;
   private hopSide = 1;
@@ -171,6 +174,65 @@ export class AstronautMission {
     this.buttons.add(home.mesh);
     this.beacons.set('airlock', home);
     this.gaze.add({ object: home.mesh, onSelect: () => this.goTo('airlock'), fuse: 2 });
+
+    // hit areas: a 5 m wide, 30 m tall column around each place's light beam …
+    const hidden = new THREE.MeshBasicMaterial({ visible: false, side: THREE.DoubleSide });
+    for (const [id, b] of this.beacons) {
+      const w = this.wp(id);
+      const col = new THREE.Mesh(new THREE.CylinderGeometry(2.5, 2.5, 30, 12, 1, false), hidden);
+      col.position.set(w.x, this.ground(w.x, w.z) + 14, w.z);
+      col.name = `hit:${id}`;
+      this.ui.add(col);
+      this.gaze.add({
+        object: col,
+        onSelect: () => this.goTo(id),
+        enabled: () => b.mesh.visible && !this.lope,
+        fuse: 2,
+        onHover: (on) => b.mesh.scale.setScalar(on ? 1.15 : 1),
+      });
+    }
+    // … and a 3 m wide strip along the glowing ground path (looking at the arrows on the ground works too)
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(12), 3));
+    g.setIndex([0, 1, 2, 2, 1, 3]);
+    this.pathHit = new THREE.Mesh(g, hidden);
+    this.pathHit.name = 'hit:path';
+    this.pathHit.frustumCulled = false;
+    this.ui.add(this.pathHit);
+    this.gaze.add({
+      object: this.pathHit,
+      onSelect: () => this.pathTarget && this.goTo(this.pathTarget),
+      enabled: () => this.pathTarget !== null && !this.lope,
+      fuse: 2,
+      onHover: (on) => this.pathTarget && this.beacons.get(this.pathTarget)?.mesh.scale.setScalar(on ? 1.15 : 1),
+    });
+  }
+
+  /** Keep the ground-path hit strip under the arrows: from 1.5 m in front of the astronaut to the target place. */
+  private updatePathHit(targets: string[]) {
+    const wps = targets.filter((t) => t.startsWith('wp:'));
+    this.pathTarget = wps.length === 1 && !this.lope ? wps[0].slice(3) : null;
+    if (!this.pathTarget) return;
+    const to = this.wp(this.pathTarget);
+    const p = this.c.rig.position;
+    const dx = to.x - p.x;
+    const dz = to.z - p.z;
+    const len = Math.hypot(dx, dz);
+    if (len < 2) return;
+    const ux = dx / len;
+    const uz = dz / len;
+    const sx = p.x + ux * 1.5;
+    const sz = p.z + uz * 1.5;
+    const W = 1.5; // half width
+    const y0 = this.ground(sx, sz) + 0.1;
+    const y1 = this.ground(to.x, to.z) + 0.1;
+    const a = this.pathHit.geometry.attributes.position as THREE.BufferAttribute;
+    a.setXYZ(0, sx - uz * W, y0, sz + ux * W);
+    a.setXYZ(1, sx + uz * W, y0, sz - ux * W);
+    a.setXYZ(2, to.x - uz * W, y1, to.z + ux * W);
+    a.setXYZ(3, to.x + uz * W, y1, to.z - ux * W);
+    a.needsUpdate = true;
+    this.pathHit.geometry.computeBoundingSphere();
   }
 
   private neighbours(id: string): string[] {
@@ -462,6 +524,7 @@ export class AstronautMission {
     for (const o of this.buttons) {
       if (o.name.startsWith('check:') || o.name.startsWith('wp:') || o.name.startsWith('sample:')) o.visible = active.has(o.name);
     }
+    this.updatePathHit([...active]);
     this.guide.setLang(lang);
     this.guide.setObjective(obj, [...this.buttons].filter((o) => active.has(o.name)));
     if (s) {

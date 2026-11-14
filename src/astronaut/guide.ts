@@ -256,18 +256,39 @@ export class Guide {
       this.chevrons.instanceMatrix.needsUpdate = true;
     } else this.chevrons.count = 0;
 
-    // edge arrow toward the first target when it is outside the comfortable view
-    const tgt = this.targets[0];
-    if (tgt && !moving) {
-      const local = this.camera.worldToLocal(tgt.clone());
-      const ang = Math.atan2(Math.hypot(local.x, local.y), -local.z);
-      const off = ang > THREE.MathUtils.degToRad(26) || local.z > 0;
+    // "turn your head this way" cue toward the NEAREST target when none is in comfortable view.
+    // It slides outward (it is a direction, not a button) and is left/right first (a target behind you is a turn,
+    // never "down"), up/down only when the target is ahead but above or below.
+    if (this.targets.length && !moving) {
+      let best = this.targets[0];
+      let bestAng = Infinity;
+      let bestLocal = new THREE.Vector3();
+      for (const t of this.targets) {
+        const l = this.camera.worldToLocal(t.clone());
+        const ang = Math.atan2(Math.hypot(l.x, l.y), -l.z);
+        if (ang < bestAng) {
+          bestAng = ang;
+          best = t;
+          bestLocal = l;
+        }
+      }
+      const off = bestAng > THREE.MathUtils.degToRad(24);
       this.arrow.visible = off;
       if (off) {
-        const a = Math.atan2(local.y, local.x);
-        this.arrow.position.set(Math.cos(a) * 0.3, Math.sin(a) * 0.3, -1);
-        this.arrow.rotation.z = a - Math.PI / 2;
-        (this.arrow.material as THREE.MeshBasicMaterial).opacity = 0.55 + 0.4 * pulse;
+        let dy = Math.atan2(best.x - camPos.x, best.z - camPos.z) - targetYaw;
+        while (dy > Math.PI) dy -= Math.PI * 2;
+        while (dy < -Math.PI) dy += Math.PI * 2;
+        const slide = 0.05 * ((this.t * 1.4) % 1);
+        if (Math.abs(dy) > THREE.MathUtils.degToRad(24)) {
+          const right = dy < 0;
+          this.arrow.position.set((right ? 1 : -1) * (0.17 + slide), 0, -1);
+          this.arrow.rotation.z = right ? -Math.PI / 2 : Math.PI / 2;
+        } else {
+          const up = bestLocal.y > 0;
+          this.arrow.position.set(0, (up ? 1 : -1) * (0.15 + slide), -1);
+          this.arrow.rotation.z = up ? 0 : Math.PI;
+        }
+        (this.arrow.material as THREE.MeshBasicMaterial).opacity = 0.95 * (1 - ((this.t * 1.4) % 1) * 0.6);
       }
     } else this.arrow.visible = false;
 
@@ -322,6 +343,16 @@ export class Guide {
     g.fillStyle = '#cfd8e3';
     const v = this.vitals;
     g.fillText(`🫁 ${Math.round(v.o2)}%    ☢️ ${v.dose.toFixed(2)} mGy    ⏱ EVA ${v.clock}`, 40, 268);
+    // how to walk (shown whenever the step is "go somewhere" and no radio caption is up)
+    if (!this.caption && o && o.targets.some((t) => t.startsWith('wp:'))) {
+      g.fillStyle = 'rgba(255,122,26,0.18)';
+      rounded(g, 8, 322, W - 16, 90, 24);
+      g.fill();
+      g.fillStyle = '#ffb27a';
+      g.font = '700 32px system-ui, sans-serif';
+      g.textAlign = 'left';
+      wrap(g, this.lang === 'az' ? '👁 Getmək üçün işıq sütununa və ya yerdəki oxlara 2 saniyə bax' : '👁 To walk, look at the light beam or the arrows on the ground for 2 seconds', 30, 352, W - 60, 36, 2);
+    }
     // Mission Control caption
     if (this.caption) {
       g.fillStyle = 'rgba(0,0,0,0.72)';

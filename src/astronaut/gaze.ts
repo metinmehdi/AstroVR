@@ -13,6 +13,8 @@ export interface GazeTarget {
   enabled?: () => boolean;
   /** seconds of steady gaze needed (default FUSE_S); movement uses longer to avoid accidental moves */
   fuse?: number;
+  /** custom hover feedback; when set, the object itself is NOT scaled (needed for invisible hit areas) */
+  onHover?: (on: boolean) => void;
 }
 
 export class Gaze {
@@ -116,7 +118,8 @@ export class Gaze {
 
   private setHover(t: GazeTarget | null, on: boolean) {
     if (!t) return;
-    t.object.scale.setScalar(on ? 1.15 : 1);
+    if (t.onHover) t.onHover(on);
+    else t.object.scale.setScalar(on ? 1.15 : 1);
   }
 
   private drawRing(p: number) {
