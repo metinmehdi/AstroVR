@@ -1,6 +1,6 @@
 /**
- * Live mirror of the astronaut's phone (WebRTC, see shared/rtc.ts). The phone renders side-by-side stereo, so only the
- * LEFT eye is shown. No stream within 8 s, or the stream drops → the locally rendered 3D helmet cam takes over.
+ * Live mirror of the astronaut's phone (WebRTC, see shared/rtc.ts). The phone sends ONE eye of its side-by-side stereo
+ * view (MirrorTap), so the whole frame is shown. No stream within 8 s, or the stream drops → the locally rendered 3D helmet cam takes over.
  */
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import type { AstronautPose, Lang, SimState } from '../shared/types';
@@ -99,8 +99,8 @@ function LeftEyeVideo({ stream, backdrop, onFrames }: { stream: MediaStream; bac
     };
   }, []);
 
-  // contain-fit the left half (one eye) of the side-by-side frame
-  const eyeAspect = dim.vw && dim.vh ? dim.vw / 2 / dim.vh : 16 / 9;
+  // contain-fit the frame (already one eye)
+  const eyeAspect = dim.vw && dim.vh ? dim.vw / dim.vh : 16 / 9;
   let eyeW = dim.cw;
   let eyeH = dim.cw / eyeAspect;
   if (eyeH > dim.ch) {
@@ -111,7 +111,7 @@ function LeftEyeVideo({ stream, backdrop, onFrames }: { stream: MediaStream; bac
     <div ref={box} className="eye-box">
       {backdrop && <video ref={bg} className="eye-backdrop" autoPlay muted playsInline aria-hidden="true" />}
       <div className="eye" style={{ width: eyeW, height: eyeH, left: (dim.cw - eyeW) / 2, top: (dim.ch - eyeH) / 2 }}>
-        <video ref={vid} autoPlay muted playsInline style={{ width: eyeW * 2, height: eyeH, opacity: dim.vw ? 1 : 0 }} />
+        <video ref={vid} autoPlay muted playsInline style={{ width: eyeW, height: eyeH, opacity: dim.vw ? 1 : 0 }} />
       </div>
     </div>
   );

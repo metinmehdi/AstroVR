@@ -15,7 +15,7 @@ import { HeadTracker, requestOrientationPermission } from './orientation';
 import { StereoRenderer } from './stereo';
 import { AstronautMission } from './mission';
 import { addVisor } from './visor';
-import { startMirrorSender } from '../shared/rtc';
+import { MirrorTap, startMirrorSender } from '../shared/rtc';
 
 const params = new URLSearchParams(location.search);
 const quality: Quality = params.get('q') === 'high' ? 'high' : 'low';
@@ -100,6 +100,7 @@ async function main() {
 
   const stereo = new StereoRenderer(renderer);
   stereo.enabled = params.get('mono') !== '1';
+  const mirrorTap = new MirrorTap(20, 540);
 
   addEventListener('resize', () => {
     renderer.setSize(innerWidth, innerHeight);
@@ -129,7 +130,7 @@ async function main() {
     setTimeout(() => head.recenter(), 1500); // time to slide the phone into the box
     transport.sendAction({ kind: 'ready' });
     // live mirror: Mission Control sees exactly this canvas (UI, visor, everything)
-    startMirrorSender(transport, renderer.domElement);
+    startMirrorSender(transport, mirrorTap.stream);
     if (params.get('intro') !== '0') mission.startIntro();
   };
   loaded = true;
@@ -153,6 +154,7 @@ async function main() {
     moon.update(dt, state);
     mission.update(dt);
     stereo.render(moon.scene, camera);
+    mirrorTap.capture(renderer.domElement, stereo.enabled, now);
   });
 }
 
