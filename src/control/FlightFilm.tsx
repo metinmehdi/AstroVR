@@ -8,7 +8,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import available from '../audio/available.json';
 import { FLIGHT, lineText } from '../audio/lines';
-import { FILM_CREDIT, FILM_URL, ROAR_URL, filmPlan } from '../shared/flightFilm';
+import { filmSrc } from '../shared/filmCache';
+import { FILM_CREDIT, ROAR_URL, filmPlan } from '../shared/flightFilm';
 import type { AstronautPose, Lang, SimState } from '../shared/types';
 import { MirrorView } from './MirrorView';
 
@@ -33,6 +34,7 @@ export function FlightFilm({
   const anchor = useRef({ at: -1, t0: 0 });
   const [t, setT] = useState(0);
   const [hidden, setHidden] = useState(false);
+  const [src] = useState(() => filmSrc()); // the in-memory copy (preloaded in the lobby) when ready
 
   // a smooth local clock anchored to the simulation's launch time
   const simT = state.t - f.at;
@@ -112,7 +114,7 @@ export function FlightFilm({
   }
   return (
     <div className="ff-overlay">
-      <video ref={video} className={`ff-video ${filmOn ? 'on' : ''}`} src={FILM_URL} muted playsInline preload="auto" />
+      <video ref={video} className={`ff-video ${filmOn ? 'on' : ''}`} src={src} muted playsInline preload="auto" />
       <div className={`ff-mirror ${filmOn ? 'corner' : 'full'}`}>
         <MirrorView stream={stream} poseRef={poseRef} state={state} lang={lang} broadcast={!filmOn} />
       </div>

@@ -113,7 +113,7 @@ const shortLen = short.reduce((a, s) => a + s.dur, 0);
 
 const list = join(CACHE, 'concat.txt');
 writeFileSync(list, parts.map((p) => `file '${p.replace(/\\/g, '/')}'`).join('\n'));
-execFileSync(FFMPEG, ['-v', 'error', '-y', '-f', 'concat', '-safe', '0', '-i', list, '-c:v', 'libx264', '-preset', 'slow', '-profile:v', 'high', '-level', '4.0', '-b:v', '2800k', '-maxrate', '3500k', '-bufsize', '6000k', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', '-an', join(ROOT, 'public/video/flight-film.mp4')]);
+execFileSync(FFMPEG, ['-v', 'error', '-y', '-f', 'concat', '-safe', '0', '-i', list, '-c:v', 'libx264', '-preset', 'slow', '-profile:v', 'high', '-level', '4.0', '-b:v', '2000k', '-maxrate', '2600k', '-bufsize', '4000k', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', '-an', join(ROOT, 'public/video/flight-film.mp4')]);
 // the real SLS roar (33 s from ignition build-up to the rocket flying away)
 execFileSync(FFMPEG, ['-v', 'error', '-y', '-i', join(CACHE, SRC.padmic.file), '-ac', '2', '-ar', '44100', '-b:a', '160k', '-af', 'afade=t=out:st=30:d=2.9', join(ROOT, 'public/audio/fx/launch-roar.mp3')]);
 

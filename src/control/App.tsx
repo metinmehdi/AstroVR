@@ -7,6 +7,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { StoryIntro } from './StoryIntro';
 import { FlightFilm } from './FlightFilm';
+import { preloadFilm } from '../shared/filmCache';
 import QRCode from 'qrcode';
 import { createTransport, type Transport } from '../shared/transport';
 import { astronautUrl, makeId, makeRoomCode, STATE_PUBLISH_HZ } from '../shared/protocol';
@@ -56,6 +57,9 @@ export function App() {
   const [storyOn, setStoryOn] = useState(() => urlFlags.get('story') !== '0');
   const [shortFlight, setShortFlight] = useState(() => urlFlags.get('pitch') === '1');
   const [story, setStory] = useState<null | 'preview' | 'start' | 'record'>(null);
+  useEffect(() => {
+    void preloadFilm(); // the real flight footage, ready long before liftoff
+  }, []);
   // the phone shows the same story in VR; if the astronaut skips there, the projector story ends too
   const storyRun = useRef<{ id: string; seen: boolean } | null>(null);
   const [storySkip, setStorySkip] = useState(false);

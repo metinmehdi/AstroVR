@@ -14,7 +14,8 @@
 import * as THREE from 'three';
 import type { SuitAudio } from '../audio/engine';
 import { EARTH_MOON_KM, TRANSIT_DAYS } from '../shared/flight';
-import { FILM_FULL, FILM_SHORT, FILM_URL, type FilmPlan } from '../shared/flightFilm';
+import { filmReady, filmSrc, preloadFilm } from '../shared/filmCache';
+import { FILM_FULL, FILM_SHORT, type FilmPlan } from '../shared/flightFilm';
 import type { Lang } from '../shared/types';
 import { createLaunchTower, createSkyDome } from '../scene/rocket';
 
@@ -366,12 +367,12 @@ export class Flight {
     this.whiteout = overlay(0x3a2a20, 1000); // inside the night cloud deck: grey, lit orange from below
     // the window film: a large plane 30 m out, so in stereo it sits "at infinity" — a view, not a screen
     this.video = document.createElement('video');
-    this.video.src = FILM_URL;
+    this.video.src = filmSrc();
     this.video.muted = true;
     this.video.playsInline = true;
     this.video.setAttribute('playsinline', '');
     this.video.setAttribute('webkit-playsinline', '');
-    this.video.preload = 'auto';
+    this.video.preload = 'metadata'; // the whole file is fetched into memory by preloadFilm()
     this.video.crossOrigin = 'anonymous';
     const vtex = new THREE.VideoTexture(this.video);
     vtex.colorSpace = THREE.SRGBColorSpace;
@@ -679,6 +680,13 @@ export class Flight {
   /** Call inside the START tap: lets mobile browsers play the video later without a gesture. */
   primeVideo() {
     const v = this.video;
+    // download the whole film into memory while the story plays / the cadet waits on the pad
+    void preloadFilm().then((src) => {
+      if (!this.filmOn && v.src !== src) {
+        v.src = src;
+        v.load();
+      }
+    });
     v.load();
     void v
       .play()
@@ -706,6 +714,7 @@ export class Flight {
     const target = P.offset + Math.min(Math.max(local, 0), P.length - 0.05);
     if (!this.filmOn) {
       this.filmOn = true;
+      if (filmReady() && v.src !== filmSrc()) v.src = filmSrc();
       try {
         v.currentTime = target;
       } catch {
