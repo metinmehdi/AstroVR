@@ -8,10 +8,13 @@ import QRCode from 'qrcode';
 import { createTransport, type Transport } from '../shared/transport';
 import { astronautUrl, evaClock, makeId, makeRoomCode, STATE_PUBLISH_HZ } from '../shared/protocol';
 import { NOBILE_MAY2024 as SCENARIO } from '../shared/scenario';
-import { t, type I18nKey } from '../shared/i18n';
-import type { Lang, RadioMessageType, RoomMeta, SimState } from '../shared/types';
+import { t } from '../shared/i18n';
+import type { AstronautPose, Lang, RadioMessageType, RoomMeta, SimState } from '../shared/types';
 import { applyAction, applyControl, createInitialState, step, type ControlCommand } from '../sim/model';
-import { computeDebrief } from '../sim/scoring';
+import { Debrief } from './Debrief';
+import { HelmetCam } from './HelmetCam';
+import { NasaDataPanel } from './NasaDataPanel';
+import { TodaySun } from './TodaySun';
 
 const TICK_S = 0.1;
 
@@ -25,6 +28,8 @@ export function App() {
   const [view, setView] = useState<SimState>(() => createInitialState(SCENARIO));
   const sim = useRef<SimState>(view);
   const tx = useRef<Transport | null>(null);
+  const poseRef = useRef<AstronautPose | null>(null);
+  const [showData, setShowData] = useState(false);
 
   const meta = (): RoomMeta => ({
     code,
@@ -47,6 +52,7 @@ export function App() {
       if (!alive) return transport.close();
       tx.current = transport;
       transport.onConnection(setConnected);
+      transport.onPose((p) => (poseRef.current = p));
       transport.onAction((env) => {
         if (env.action.kind === 'ready') setReady(true);
         applyAction(sim.current, env.action, SCENARIO);
@@ -97,7 +103,6 @@ export function App() {
   };
 
   const s = view;
-  const debrief = s.phase === 'debrief' ? computeDebrief(s) : null;
   const pct = (n: number) => `${Math.round(n)}%`;
 
   return (
@@ -105,8 +110,10 @@ export function App() {
       <header>
         <h1>{t(lang, 'app.title')}</h1>
         <span className={connected ? 'ok' : 'bad'}>{connected ? '● LINK' : '○ NO LINK'}</span>
+        <button onClick={() => setShowData(true)}>🛰️ NASA DATA</button>
         <button onClick={() => setLang(lang === 'en' ? 'az' : 'en')}>{lang === 'en' ? 'AZ' : 'EN'}</button>
       </header>
+      {showData && <NasaDataPanel lang={lang} onClose={() => setShowData(false)} />}
 
       {s.phase === 'lobby' && (
         <section className="lobby">
@@ -119,6 +126,7 @@ export function App() {
           <button disabled={!ready} onClick={() => cmd({ kind: 'start' })}>
             {t(lang, 'control.start')}
           </button>
+          <TodaySun lang={lang} />
         </section>
       )}
 
@@ -138,6 +146,12 @@ export function App() {
             <Gauge label={`🫁 ${t(lang, 'res.o2')}`} value={s.o2.suitPct} sub={`walk-back margin ${pct(s.o2.walkbackMarginPct)}`} />
             <Gauge label={`☢️ ${t(lang, 'res.dose')}`} value={100 - s.dose.budgetPct} sub={`${s.dose.totalMGy.toFixed(2)} mGy · ${s.dose.rateMGyPerH} mGy/h`} />
           </div>
+          {s.phase !== 'debrief' && (
+            <div className="side">
+              <HelmetCam poseRef={poseRef} state={s} />
+              <TodaySun lang={lang} />
+            </div>
+          )}
           <div className="switches">
             <button onClick={() => cmd({ kind: 'raiseVsat' })} disabled={s.switches.vsat !== 'down'}>
               ☀️ {t(lang, 'sw.vsat')}: {s.switches.vsat} {s.switches.vsat === 'raising' && pct(s.vsatProgress * 100)}
@@ -171,21 +185,7 @@ export function App() {
               .map(([k, v]) => `${v ? '✓' : '·'}${k}`)
               .join(' ')}
           </div>
-          {debrief && (
-            <div className="debrief">
-              {(['prep', 'science', 'resources', 'teamwork'] as const).map((k) => (
-                <p key={k}>
-                  {t(lang, `debrief.${k}`)}: {'★'.repeat(debrief[k])}
-                  {'☆'.repeat(3 - debrief[k])}
-                </p>
-              ))}
-              <ul>
-                {debrief.notes.map((n) => (
-                  <li key={n}>{t(lang, n as I18nKey)}</li>
-                ))}
-              </ul>
-            </div>
-          )}
+          {s.phase === 'debrief' && <Debrief s={s} lang={lang} cadetName={cadetName} onRetry={() => void restart()} />}
           <ol className="events">
             {s.events.slice(-12).map((e, i) => (
               <li key={i}>

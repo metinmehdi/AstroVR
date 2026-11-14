@@ -36,3 +36,35 @@ small { color: var(--muted); }
 .debrief { background: var(--panel); border: 1px solid var(--warn); border-radius: 12px; padding: 12px; font-size: 20px; }
 .events { color: var(--muted); font: 12px/1.5 ui-monospace, monospace; }
 @media (max-width: 700px) { .gauges { grid-template-columns: 1fr; } }
+
+/* --- cards, helmet cam, Today's Sun, NASA data, debrief --- */
+.console { display: grid; grid-template-columns: 1fr; gap: 14px; }
+.side { display: grid; grid-template-columns: 1.4fr 1fr; gap: 12px; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px; }
+.card-head { font-weight: 700; margin-bottom: 8px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.cam-host canvas { width: 100%; border-radius: 8px; display: block; background: #000; }
+.badge { font-size: 11px; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); }
+.badge.ok { color: var(--ok); border-color: var(--ok); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { background: #111b27; border-radius: 999px; padding: 3px 10px; font-size: 13px; }
+.muted { color: var(--muted); }
+.small { font-size: 13px; }
+.big { font-size: 28px; font-weight: 800; margin: 4px 0; }
+.modal { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.7); display: grid; place-items: center; z-index: 10; padding: 16px; }
+.modal-body { background: var(--bg); border: 1px solid var(--line); border-radius: 16px; max-width: 900px; width: 100%; max-height: 90vh; overflow: auto; padding: 20px; }
+.modal-head { display: flex; justify-content: space-between; align-items: center; }
+.modal-head h2 { font-size: 20px; margin: 0; }
+.datasets li { margin: 10px 0; }
+.datasets a { color: #7fb8ff; }
+.sources li { margin: 4px 0; color: var(--muted); font-size: 14px; }
+.debrief { display: flex; flex-direction: column; gap: 14px; font-size: 16px; }
+.patch { font-size: 22px; }
+.stars { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.star-row { font-size: 32px; color: var(--warn); letter-spacing: 2px; }
+.notes li { margin: 6px 0; }
+.cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.card.real { border-color: var(--warn); }
+.rock { width: 100%; border-radius: 8px; }
+.timeline li { margin: 4px 0; }
+button.primary { background: var(--warn); color: #000; font-weight: 800; border: 0; align-self: flex-start; }
+@media (max-width: 900px) { .side, .cards, .stars { grid-template-columns: 1fr; } }
