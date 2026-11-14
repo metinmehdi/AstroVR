@@ -4,6 +4,10 @@
  * All ambience is synthesized (no files). Voice: public/audio/{lang}/{id}.mp3 if present, else browser speech.
  */
 import type { Lang } from '../shared/types';
+import available from './available.json';
+
+/** Voice files that exist in public/audio/{lang}/ (P5: add the id here after adding the mp3). Others use browser speech. */
+const HAS_FILE: Record<Lang, Set<string>> = { en: new Set(available.en as string[]), az: new Set(available.az as string[]) };
 
 export class SuitAudio {
   private ctx: AudioContext | null = null;
@@ -193,6 +197,7 @@ export class SuitAudio {
   }
 
   private say(id: string, text: string, kind: 'radio' | 'suit'): Promise<void> {
+    if (!HAS_FILE[this.lang].has(id)) return this.speak(text);
     return new Promise((resolve) => {
       const audio = new Audio(`/audio/${this.lang}/${id}.mp3`);
       audio.volume = kind === 'radio' ? 0.95 : 0.85;

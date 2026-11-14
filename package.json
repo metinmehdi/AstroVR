@@ -13,7 +13,8 @@
     "test": "vitest run",
     "check": "tsc --noEmit && vitest run && vite build",
     "fetch-data": "node --env-file=.env scripts/fetch-nasa-data.mjs",
-    "check-realtime": "node --env-file=.env scripts/check-realtime.mjs"
+    "check-realtime": "node --env-file=.env scripts/check-realtime.mjs",
+    "voices": "node --env-file=.env scripts/generate-voices.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.119.0",
