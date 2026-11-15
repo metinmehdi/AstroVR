@@ -237,7 +237,7 @@ export function createOutpost(heightAt: (x: number, z: number) => number, sunDir
   airlock.add(bake(al));
   const glass = new THREE.Mesh(
     new THREE.CylinderGeometry(R - 0.01, R - 0.01, 2.2, 32, 1, true, WIN0, WIN),
-    new THREE.MeshPhysicalMaterial({ color: 0x9fb8d8, transparent: true, opacity: 0.2, roughness: 0.04, metalness: 0.2, envMap: env, envMapIntensity: 1.6, side: THREE.DoubleSide, depthWrite: false }),
+    new THREE.MeshPhysicalMaterial({ color: 0x9fb8d8, transparent: true, opacity: 0.07, roughness: 0.04, metalness: 0.1, envMap: env, envMapIntensity: 0.8, side: THREE.DoubleSide, depthWrite: false }),
   );
   glass.position.y = 1.4;
   // soft interior light (no hot spot on the ceiling)
