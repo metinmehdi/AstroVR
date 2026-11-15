@@ -48,7 +48,7 @@ export class StoryVR {
     this.group.add(screen);
 
     // top-right of the view, in front of the screen (subtitles live at the bottom)
-    this.skip = makeButton('⏭', 'SKIP', '#ff7a1a', 0.75);
+    this.skip = makeButton('⏭', 'SKIP', '#4d84ff', 0.75);
     this.skip.mesh.position.set(1.05, SEAT_Y + 0.85, -2.3);
     this.skip.mesh.renderOrder = 20;
     this.skip.mesh.lookAt(0, SEAT_Y, 0);

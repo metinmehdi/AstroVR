@@ -47,7 +47,7 @@ export class Gaze {
     this.ringGeo = new THREE.RingGeometry(0.014, 0.02, 32, 1, Math.PI / 2, 0.0001);
     this.ring = new THREE.Mesh(
       this.ringGeo,
-      new THREE.MeshBasicMaterial({ color: 0xffc847, depthTest: false, transparent: true }),
+      new THREE.MeshBasicMaterial({ color: 0xa3e635, depthTest: false, transparent: true }),
     );
     this.ring.position.z = -1;
     this.ring.renderOrder = 1000;

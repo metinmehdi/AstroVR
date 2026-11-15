@@ -1,24 +1,14 @@
 /** World-space UI for VR: icon buttons (gaze targets) and the wrist panel. Canvas textures, no DOM. */
 import * as THREE from 'three';
-import { begin, centredLabel, crisp, hiCanvas } from './text';
+import { EMOJI, UI, begin, centredLabel, crisp, glassCard, hiCanvas, roundPath } from './text';
 
 export interface Button3D {
   mesh: THREE.Mesh;
   setText(icon: string, label: string, color?: string): void;
 }
 
-function roundRect(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
-  g.beginPath();
-  g.moveTo(x + r, y);
-  g.arcTo(x + w, y, x + w, y + h, r);
-  g.arcTo(x + w, y + h, x, y + h, r);
-  g.arcTo(x, y + h, x, y, r);
-  g.arcTo(x, y, x + w, y, r);
-  g.closePath();
-}
-
 /** A floating icon button. Size in metres. Always faces the viewer (call faceCamera each frame). */
-export function makeButton(icon: string, label: string, color = '#ffc847', widthM = 0.9): Button3D {
+export function makeButton(icon: string, label: string, color = UI.accent, widthM = 0.9): Button3D {
   const canvas = hiCanvas(512, 256);
   const g = canvas.getContext('2d')!;
   const tex = crisp(new THREE.CanvasTexture(canvas));
@@ -29,18 +19,25 @@ export function makeButton(icon: string, label: string, color = '#ffc847', width
   mesh.renderOrder = 10;
   const setText = (ic: string, lb: string, col = color) => {
     begin(g);
-    roundRect(g, 8, 8, 496, 240, 48);
-    g.fillStyle = 'rgba(5,10,18,0.82)';
-    g.fill();
-    g.lineWidth = 10;
+    glassCard(g, 8, 8, 496, 240, 44, col);
+    // coloured ring = what kind of target this is (thick enough to read from metres away)
+    roundPath(g, 8, 8, 496, 240, 44);
+    g.lineWidth = 7;
     g.strokeStyle = col;
     g.stroke();
+    // icon in a tinted badge
+    g.beginPath();
+    g.arc(256, 84, 54, 0, Math.PI * 2);
+    g.globalAlpha = 0.22;
+    g.fillStyle = col;
+    g.fill();
+    g.globalAlpha = 1;
     g.textAlign = 'center';
     g.textBaseline = 'middle';
     g.fillStyle = '#ffffff';
-    g.font = '84px system-ui, "Apple Color Emoji", "Segoe UI Emoji", sans-serif';
-    g.fillText(ic, 256, 84);
-    g.fillStyle = '#ffffff';
+    g.font = `70px ${EMOJI}`;
+    g.fillText(ic, 256, 88);
+    g.fillStyle = UI.text;
     centredLabel(g, lb, 256, 186, 468, 58, 40); // big, never squeezed: two lines if needed
     tex.needsUpdate = true;
   };
@@ -79,34 +76,37 @@ export class WristPanel {
   draw(o2Pct: number, walkbackPct: number, doseMGy: number, budgetPct: number, rateMGyH: number, task: string) {
     const g = this.g;
     begin(g);
-    roundRect(g, 4, 4, 504, 312, 28);
-    g.fillStyle = 'rgba(3,8,14,0.9)';
-    g.fill();
-    g.strokeStyle = '#2b3a4d';
-    g.lineWidth = 6;
-    g.stroke();
+    glassCard(g, 4, 4, 504, 312, 28);
     const bar = (y: number, icon: string, v: number, text: string) => {
-      g.font = '44px system-ui, "Segoe UI Emoji", sans-serif';
+      g.font = `40px ${EMOJI}`;
       g.textAlign = 'left';
       g.textBaseline = 'middle';
       g.fillStyle = '#fff';
       g.fillText(icon, 20, y);
-      g.fillStyle = '#16212e';
-      g.fillRect(80, y - 16, 300, 32);
-      const c = v > 50 ? '#3ddc84' : v > 20 ? '#ffc847' : '#ff5a4f';
-      g.fillStyle = c;
-      g.fillRect(80, y - 16, (300 * Math.max(0, Math.min(100, v))) / 100, 32);
-      g.fillStyle = '#e8eef7';
+      roundPath(g, 80, y - 14, 300, 28, 14);
+      g.fillStyle = UI.track;
+      g.fill();
+      const c = v > 50 ? UI.ok : v > 20 ? UI.warn : UI.danger;
+      const fw = (300 * Math.max(0, Math.min(100, v))) / 100;
+      if (fw > 2) {
+        roundPath(g, 80, y - 14, Math.max(28, fw), 28, 14);
+        g.fillStyle = c;
+        g.fill();
+      }
+      g.fillStyle = UI.text;
       g.font = '700 30px system-ui, sans-serif';
       g.fillText(text, 392, y);
     };
     bar(54, '🫁', o2Pct, `${Math.round(o2Pct)}%`);
     bar(110, '🏠', walkbackPct * 2, walkbackPct >= 0 ? `+${Math.round(walkbackPct)}` : 'NO!');
     bar(166, '☢️', 100 - budgetPct, `${doseMGy.toFixed(2)}`);
-    g.fillStyle = '#8ea0b5';
-    g.font = '24px system-ui, sans-serif';
-    g.fillText(`${rateMGyH.toFixed(2)} mGy/h`, 392, 196);
-    g.fillStyle = '#ffc847';
+    g.fillStyle = UI.muted;
+    g.font = '22px system-ui, sans-serif';
+    g.textAlign = 'right';
+    g.fillText(`${rateMGyH.toFixed(2)} mGy/h`, 492, 198);
+    g.fillStyle = 'rgba(157,187,255,0.14)';
+    g.fillRect(24, 226, 464, 2);
+    g.fillStyle = UI.accentSoft;
     centredLabel(g, task, 256, 268, 484, 34, 26);
     this.tex.needsUpdate = true;
   }

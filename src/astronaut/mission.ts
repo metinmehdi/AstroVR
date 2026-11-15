@@ -15,6 +15,7 @@ import { Effects } from './effects';
 import { currentObjective } from '../shared/objective';
 import { evaClock } from '../shared/protocol';
 import { faceCamera, makeButton, WristPanel, type Button3D } from './ui3d';
+import { UI, begin, crisp, hiCanvas, roundPath } from './text';
 
 const EYE = 1.65;
 const LOPE_SPEED = 2.6; // scene m/s
@@ -110,7 +111,7 @@ export class AstronautMission {
       { item: 'toolCheck', icon: '🧰', label: L('Tools', 'Alətlər'), angle: 1.8 },
     ];
     for (const s of stations) {
-      const b = makeButton(s.icon, this.t(s.label), s.item === 'lookTraining' ? '#7fe3ff' : '#ffc847', 0.7);
+      const b = makeButton(s.icon, this.t(s.label), s.item === 'lookTraining' ? '#7fe3ff' : UI.accent, 0.7);
       // angle 0 = straight ahead (-z), positive = to the right
       b.mesh.position.set(w.x + Math.sin(s.angle) * 1.6, y + (s.dy ?? 0), w.z - Math.cos(s.angle) * 1.6);
       b.mesh.name = `check:${s.item}`;
@@ -154,7 +155,7 @@ export class AstronautMission {
     for (const w of this.c.scenario.waypoints) {
       if (w.id === 'airlock') continue;
       const icon = w.siteId ? '🪨' : w.shadowRefuge ? '🌑' : w.id === 'base' ? '🚪' : '➡️';
-      const b = makeButton(icon, w.label[this.c.getLang()], w.shadowRefuge ? '#9fb3ff' : w.siteId ? '#ffc847' : '#5fd3ff', 1.1);
+      const b = makeButton(icon, w.label[this.c.getLang()], w.shadowRefuge ? UI.ok : w.siteId ? UI.warn : '#5fd3ff', 1.1);
       b.mesh.position.set(w.x, this.ground(w.x, w.z) + 1.4, w.z);
       b.mesh.userData.relabel = () => b.setText(icon, w.label[this.c.getLang()]);
       b.mesh.visible = false;
@@ -314,7 +315,7 @@ export class AstronautMission {
       rock.name = `rock:${siteId}`;
       this.c.scene.add(rock);
       const mk = (icon: string, label: Label, dx: number, onSel: () => void, enabled: () => boolean, name: string) => {
-        const b = makeButton(icon, this.t(label), '#ffc847', 0.6);
+        const b = makeButton(icon, this.t(label), UI.accent, 0.6);
         b.mesh.name = `sample:${siteId}:${name}`;
         b.mesh.position.set(rock.position.x + dx, gy + 1.25, rock.position.z);
         b.mesh.userData.relabel = () => b.setText(icon, this.t(label));
@@ -417,19 +418,40 @@ export class AstronautMission {
   /* ---------------------------------------------------------------- cinematic intro */
   /** Slow 9 s descent from 250 m over the real LOLA terrain to the airlock (comfort: eased, no rotation forced). */
   startIntro() {
-    const c = document.createElement('canvas');
-    c.width = 1024;
-    c.height = 300;
+    // AstroVR wordmark + site line (same brand as the Mission Control header)
+    const c = hiCanvas(1024, 300);
     const g = c.getContext('2d')!;
-    g.textAlign = 'center';
-    g.fillStyle = '#ffffff';
-    g.font = '800 120px system-ui, sans-serif';
-    g.fillText('AstroVR', 512, 130);
-    g.fillStyle = '#ff9a4a';
-    g.font = '600 46px system-ui, sans-serif';
-    g.fillText(this.c.getLang() === 'az' ? 'Nobile Rim 1 · Ayın cənub qütbü' : 'Nobile Rim 1 · Moon south pole', 512, 210);
-    const tex = new THREE.CanvasTexture(c);
-    tex.colorSpace = THREE.SRGBColorSpace;
+    const tex = crisp(new THREE.CanvasTexture(c));
+    const sub = this.c.getLang() === 'az' ? 'Nobile Rim 1 · Ayın cənub qütbü' : 'Nobile Rim 1 · Moon south pole';
+    const paint = (logo: HTMLImageElement | null) => {
+      begin(g);
+      g.textAlign = 'center';
+      g.textBaseline = 'middle';
+      if (logo) {
+        const h = 170;
+        const w = (logo.naturalWidth / logo.naturalHeight) * h;
+        g.drawImage(logo, 512 - w / 2, 8, w, h);
+      } else {
+        g.fillStyle = '#ffffff';
+        g.font = '800 120px system-ui, sans-serif';
+        g.fillText('AstroVR', 512, 95);
+      }
+      g.font = '600 40px system-ui, sans-serif';
+      const tw = g.measureText(sub).width + 64;
+      roundPath(g, 512 - tw / 2, 206, tw, 64, 32);
+      g.fillStyle = 'rgba(8,14,30,0.78)';
+      g.fill();
+      g.lineWidth = 2;
+      g.strokeStyle = 'rgba(157,187,255,0.45)';
+      g.stroke();
+      g.fillStyle = UI.accentSoft;
+      g.fillText(sub, 512, 239);
+      tex.needsUpdate = true;
+    };
+    paint(null);
+    const logo = new Image();
+    logo.onload = () => paint(logo);
+    logo.src = '/images/astrovr-wordmark.png';
     const title = new THREE.Mesh(new THREE.PlaneGeometry(1.2, 0.35), new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthTest: false }));
     title.position.set(0, 0.15, -2);
     title.renderOrder = 994;

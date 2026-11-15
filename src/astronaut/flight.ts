@@ -482,11 +482,11 @@ export class Flight {
     const H = 384;
     g.clearRect(0, 0, W, H);
     if (clock || event) {
-      g.fillStyle = 'rgba(4,8,14,0.74)';
+      g.fillStyle = 'rgba(8,14,30,0.86)';
       g.beginPath();
       g.roundRect(8, 8, W - 16, H - 16, 44);
       g.fill();
-      g.strokeStyle = 'rgba(255,154,74,0.9)';
+      g.strokeStyle = 'rgba(77,132,255,0.95)';
       g.lineWidth = 6;
       g.stroke();
       g.textAlign = 'center';
@@ -495,7 +495,7 @@ export class Flight {
       g.font = '800 150px system-ui, sans-serif';
       g.fillText(clock, W / 2, event ? 125 : H / 2);
       if (event) {
-        g.fillStyle = '#ffb36b';
+        g.fillStyle = '#9dbbff';
         let size = 92;
         do {
           g.font = `800 ${size}px system-ui, sans-serif`;

@@ -7,11 +7,11 @@
  *  - success burst + chime on every completed step
  */
 import * as THREE from 'three';
-import { TEXT_SCALE, begin, crisp } from './text';
+import { EMOJI, TEXT_SCALE, UI, begin, crisp, glassCard, roundPath, wrapLines } from './text';
 import type { Lang } from '../shared/types';
 import type { Objective } from '../shared/objective';
 
-const ACCENT = 0xff7a1a;
+const ACCENT = 0x4d84ff; // dashboard blue
 const PHASES: Record<Lang, string[]> = {
   en: ['Briefing', 'Prep', 'Surface', 'Decision', 'Debrief'],
   az: ['Brifinq', 'Hazırlıq', 'Səth', 'Qərar', 'Final'],
@@ -99,7 +99,7 @@ export class Guide {
     }
     // halo behind button targets
     this.halo = new THREE.Sprite(
-      new THREE.SpriteMaterial({ map: glow('255,122,26'), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }),
+      new THREE.SpriteMaterial({ map: glow('77,132,255'), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }),
     );
     this.halo.visible = false;
     scene.add(this.halo);
@@ -145,7 +145,7 @@ export class Guide {
     // success burst (camera space ring)
     this.burst = new THREE.Mesh(
       new THREE.RingGeometry(0.03, 0.036, 48),
-      new THREE.MeshBasicMaterial({ color: 0x3ddc84, transparent: true, opacity: 0, depthTest: false }),
+      new THREE.MeshBasicMaterial({ color: 0xa3e635, transparent: true, opacity: 0, depthTest: false }),
     );
     this.burst.position.z = -0.9;
     this.burst.renderOrder = 996;
@@ -204,6 +204,7 @@ export class Guide {
   hudEnabled = true;
 
   hideAll() {
+    this.hud.visible = false; // update() shows it again (intro title / flight never sit on top of the card)
     this.beams.forEach((b) => (b.visible = false));
     this.halo.visible = false;
     this.chevrons.count = 0;
@@ -310,87 +311,158 @@ export class Guide {
     const W = 1024; // logical units (the canvas is TEXT_SCALE× sharper)
     begin(g);
     const o = this.objective;
-    // card
-    g.fillStyle = this.vitals.storm ? 'rgba(60,8,8,0.82)' : 'rgba(4,10,20,0.78)';
-    rounded(g, 8, 8, W - 16, 300, 36);
-    g.fill();
-    g.lineWidth = 6;
-    g.strokeStyle = this.vitals.storm ? '#ff5a4f' : '#ff7a1a';
-    g.stroke();
-    // phase dots
+    const v = this.vitals;
+    glassCard(g, 8, 8, W - 16, 300, 34, UI.accent, v.storm);
+
+    // phase tracker: a rail with five stations (done = lime check, current = blue with a ring)
     const names = PHASES[this.lang];
     const step = o?.phaseStep ?? 0;
-    for (let i = 0; i < 5; i++) {
-      const x = 120 + i * 196;
+    const x0 = 120;
+    const dx = 196;
+    const y = 50;
+    g.lineCap = 'round';
+    g.lineWidth = 6;
+    g.strokeStyle = UI.track;
+    g.beginPath();
+    g.moveTo(x0, y);
+    g.lineTo(x0 + 4 * dx, y);
+    g.stroke();
+    if (step > 1) {
+      g.strokeStyle = UI.ok;
       g.beginPath();
-      g.arc(x, 48, 13, 0, Math.PI * 2);
-      g.fillStyle = i + 1 < step ? '#3ddc84' : i + 1 === step ? '#ff7a1a' : '#33414f';
+      g.moveTo(x0, y);
+      g.lineTo(x0 + (Math.min(step, 5) - 1) * dx, y);
+      g.stroke();
+    }
+    for (let i = 0; i < 5; i++) {
+      const x = x0 + i * dx;
+      const n = i + 1;
+      const done = n < step;
+      const cur = n === step;
+      if (cur) {
+        g.beginPath();
+        g.arc(x, y, 24, 0, Math.PI * 2);
+        g.fillStyle = 'rgba(77,132,255,0.25)';
+        g.fill();
+      }
+      g.beginPath();
+      g.arc(x, y, cur ? 16 : 13, 0, Math.PI * 2);
+      g.fillStyle = done ? UI.ok : cur ? UI.accent : '#1a2538';
       g.fill();
-      g.fillStyle = i + 1 === step ? '#ffffff' : '#8ea0b5';
-      g.font = `${i + 1 === step ? '700 ' : '600 '}30px system-ui, sans-serif`;
+      if (!done && !cur) {
+        g.lineWidth = 3;
+        g.strokeStyle = '#3a4a66';
+        g.stroke();
+      }
+      if (done) {
+        // check mark
+        g.lineWidth = 4;
+        g.strokeStyle = '#0b1400';
+        g.beginPath();
+        g.moveTo(x - 6, y);
+        g.lineTo(x - 1, y + 5);
+        g.lineTo(x + 7, y - 5);
+        g.stroke();
+      }
       g.textAlign = 'center';
+      g.textBaseline = 'middle';
+      g.fillStyle = cur ? '#ffffff' : done ? '#cfe9a8' : UI.muted;
+      g.font = `${cur ? 700 : 600} 28px system-ui, sans-serif`;
       g.fillText(names[i], x, 92);
     }
-    // icon + instruction
+    // divider
+    g.fillStyle = 'rgba(157,187,255,0.14)';
+    g.fillRect(36, 114, W - 72, 2);
+
+    // icon badge + instruction (vertically centred, never overlapping)
     if (o) {
-      g.font = '96px "Segoe UI Emoji", "Apple Color Emoji", system-ui';
+      const cy = 180;
+      g.beginPath();
+      g.arc(92, cy, 48, 0, Math.PI * 2);
+      g.fillStyle = v.storm ? 'rgba(255,90,79,0.18)' : 'rgba(77,132,255,0.18)';
+      g.fill();
+      g.lineWidth = 3;
+      g.strokeStyle = v.storm ? UI.danger : UI.accent;
+      g.stroke();
+      g.font = `60px ${EMOJI}`;
+      g.textAlign = 'center';
+      g.textBaseline = 'middle';
+      g.fillStyle = '#ffffff';
+      g.fillText(o.icon, 92, cy + 3);
+
+      g.textAlign = 'left';
+      g.fillStyle = UI.text;
+      g.font = '700 46px system-ui, sans-serif';
+      let lines = wrapLines(g, o.astro[this.lang], W - 210, 2);
+      if (lines.length === 2) {
+        g.font = '700 40px system-ui, sans-serif'; // two lines: a bit smaller so both sit inside the card
+        lines = wrapLines(g, o.astro[this.lang], W - 210, 2);
+      }
+      const lh = 52;
+      const top = cy - ((lines.length - 1) * lh) / 2;
+      lines.forEach((l, i) => g.fillText(l, 168, top + i * lh));
+    }
+
+    // vitals as chips
+    const chip = (x: number, icon: string, text: string, color: string) => {
+      g.font = '700 30px system-ui, sans-serif';
+      const tw = g.measureText(text).width;
+      const w = tw + 92;
+      roundPath(g, x, 248, w, 44, 22);
+      g.fillStyle = 'rgba(255,255,255,0.06)';
+      g.fill();
+      g.lineWidth = 2;
+      g.strokeStyle = 'rgba(157,187,255,0.22)';
+      g.stroke();
+      g.beginPath();
+      g.arc(x + 26, 270, 7, 0, Math.PI * 2);
+      g.fillStyle = color;
+      g.fill();
       g.textAlign = 'left';
       g.textBaseline = 'middle';
-      g.fillText(o.icon, 40, 192);
-      g.fillStyle = '#ffffff';
-      g.font = '700 48px system-ui, sans-serif';
-      wrap(g, o.astro[this.lang], 170, 168, W - 196, 56, 2);
-    }
-    // vitals
-    g.font = '700 34px system-ui, sans-serif';
-    g.textAlign = 'left';
-    g.fillStyle = '#e6edf5';
-    const v = this.vitals;
-    g.fillText(`🫁 ${Math.round(v.o2)}%    ☢️ ${v.dose.toFixed(2)} mGy    ⏱ EVA ${v.clock}`, 40, 268);
-    // how to walk (shown whenever the step is "go somewhere" and no radio caption is up)
-    if (!this.caption && o && o.targets.some((t) => t.startsWith('wp:'))) {
-      g.fillStyle = 'rgba(255,122,26,0.18)';
-      rounded(g, 8, 322, W - 16, 90, 24);
+      g.font = `26px ${EMOJI}`;
+      g.fillText(icon, x + 40, 271);
+      g.font = '700 30px system-ui, sans-serif';
+      g.fillStyle = UI.text;
+      g.fillText(text, x + 76, 271);
+      return x + w + 14;
+    };
+    const o2c = v.o2 > 50 ? UI.ok : v.o2 > 20 ? UI.warn : UI.danger;
+    const dc = v.doseBudgetPct <= 50 ? UI.ok : v.doseBudgetPct <= 80 ? UI.warn : UI.danger;
+    let cx = chip(36, '🫁', `${Math.round(v.o2)}%`, o2c);
+    cx = chip(cx, '☢️', `${v.dose.toFixed(2)} mGy`, dc);
+    chip(cx, '⏱', `EVA ${v.clock}`, UI.accent);
+
+    // strip under the card: radio caption (priority) or the how-to-walk hint
+    const strip = (text: string, label: string, color: string) => {
+      glassCard(g, 8, 322, W - 16, 90, 24, color);
+      g.fillStyle = color;
+      roundPath(g, 22, 340, 8, 54, 4);
       g.fill();
-      g.fillStyle = '#ffb27a';
-      g.font = '700 34px system-ui, sans-serif';
       g.textAlign = 'left';
-      wrap(g, this.lang === 'az' ? '👁 Getmək üçün işıq sütununa və ya yerdəki oxlara 2 saniyə bax' : '👁 To walk, look at the light beam or the arrows on the ground for 2 seconds', 30, 352, W - 60, 36, 2);
-    }
-    // Mission Control caption
-    if (this.caption) {
-      g.fillStyle = 'rgba(0,0,0,0.72)';
-      rounded(g, 8, 322, W - 16, 90, 24);
-      g.fill();
-      g.fillStyle = '#ffd27f';
-      g.font = '700 34px system-ui, sans-serif';
-      wrap(g, `📻 ${this.caption}`, 30, 352, W - 60, 38, 2);
-    }
+      g.textBaseline = 'middle';
+      g.font = '800 20px system-ui, sans-serif';
+      g.fillStyle = color;
+      g.fillText(label, 48, 342);
+      g.fillStyle = UI.text;
+      let size = 32;
+      for (; size > 26; size -= 2) {
+        g.font = `700 ${size}px system-ui, sans-serif`;
+        if (g.measureText(text).width <= W - 80) break;
+      }
+      g.font = `700 ${size}px system-ui, sans-serif`;
+      const ls = wrapLines(g, text, W - 80, 2);
+      if (ls.length === 1) g.fillText(ls[0], 48, 378);
+      else ls.forEach((l, i) => g.fillText(l, 48, 366 + i * 30));
+    };
+    if (this.caption) strip(this.caption, this.lang === 'az' ? '📻  MİSSİYA İDARƏSİ' : '📻  MISSION CONTROL', UI.ok);
+    else if (o && o.targets.some((t) => t.startsWith('wp:')))
+      strip(
+        this.lang === 'az' ? 'Getmək üçün işıq sütununa və ya yerdəki oxlara 2 saniyə bax' : 'To walk, look at the light beam or the arrows on the ground for 2 seconds',
+        this.lang === 'az' ? '👁  NECƏ GETMƏLİ' : '👁  HOW TO WALK',
+        UI.accentSoft,
+      );
     this.hudTex.needsUpdate = true;
   }
 }
 
-function rounded(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
-  g.beginPath();
-  g.moveTo(x + r, y);
-  g.arcTo(x + w, y, x + w, y + h, r);
-  g.arcTo(x + w, y + h, x, y + h, r);
-  g.arcTo(x, y + h, x, y, r);
-  g.arcTo(x, y, x + w, y, r);
-  g.closePath();
-}
-
-function wrap(g: CanvasRenderingContext2D, text: string, x: number, y: number, maxW: number, lh: number, maxLines: number) {
-  const words = text.split(' ');
-  let line = '';
-  let n = 0;
-  for (const w of words) {
-    const test = line ? `${line} ${w}` : w;
-    if (g.measureText(test).width > maxW && line) {
-      g.fillText(line, x, y + n * lh);
-      line = w;
-      if (++n >= maxLines) return;
-    } else line = test;
-  }
-  if (line && n < maxLines) g.fillText(line, x, y + n * lh);
-}
