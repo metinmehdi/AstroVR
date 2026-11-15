@@ -148,6 +148,17 @@ function createTracks(meshHeightAt: (x: number, z: number) => number): THREE.Mes
   return mesh;
 }
 
+/**
+ * The rover's own copies of the outpost materials (same look and Moon reflections), drawn into the shadow map with
+ * their BACK faces: at a 4° Sun a lit surface compared against its own depth speckles (shadow acne); against the far
+ * side of the part it never does. So every part can receive real shadows (a boulder's 40 m shadow, the terrain's).
+ */
+function own<T extends THREE.Material>(m: T): T {
+  const c = m.clone() as T;
+  c.shadowSide = THREE.BackSide;
+  return c;
+}
+
 export function createRover(o: RoverOpts): Rover {
   const group = new THREE.Group();
   group.name = 'rover';
@@ -177,7 +188,9 @@ export function createRover(o: RoverOpts): Rover {
   part(lists.grey, new THREE.CylinderGeometry(0.03, 0.03, 0.42, 8), -0.3, 0.315 + 0.21, -0.4);
   // real solar cells look almost black-navy (they absorb light); the tint darkens the shared panel texture
   const solarMat = new THREE.MeshStandardMaterial({ map: solarPanelTexture(), color: 0x6a7488, roughness: 0.35, metalness: 0.5, emissive: 0x020409 });
-  const mats = { grey: GREY, white: WHITE, dark: DARK, gold: GOLD, solar: solarMat };
+  const darkMat = own(DARK);
+  const greyMat = own(GREY);
+  const mats = { grey: greyMat, white: own(WHITE), dark: darkMat, gold: own(GOLD), solar: own(solarMat) };
   for (const k of Object.keys(lists) as (keyof typeof lists)[]) {
     const g = mergeGeometries(lists[k].map((x) => x.toNonIndexed()))!;
     const m = new THREE.Mesh(g, mats[k]);
@@ -194,8 +207,8 @@ export function createRover(o: RoverOpts): Rover {
   part(headParts, new THREE.BoxGeometry(0.44, 0.12, 0.13), 0, 0, 0);
   for (const x of [-0.13, 0.13]) part(headParts, new THREE.CylinderGeometry(0.035, 0.035, 0.06, 12), x, 0.0, 0.08, Math.PI / 2);
   part(headParts, new THREE.BoxGeometry(0.06, 0.08, 0.06), 0, -0.09, 0); // pan-tilt unit
-  const head = new THREE.Mesh(mergeGeometries(headParts.map((x) => x.toNonIndexed()))!, DARK);
-  head.castShadow = true; // small curved parts only cast: at a 4° Sun their self-shadow lookup speckles (acne)
+  const head = new THREE.Mesh(mergeGeometries(headParts.map((x) => x.toNonIndexed()))!, darkMat);
+  head.castShadow = head.receiveShadow = true;
   tilt.add(head);
   const lamps = [-0.2, 0.2].map((x) => {
     const l = makeLamp(0xfff4e0, 0.022, 0.55);
@@ -212,19 +225,21 @@ export function createRover(o: RoverOpts): Rover {
   const dishGeo = new THREE.SphereGeometry(0.3, 18, 6, 0, Math.PI * 2, 0, Math.PI / 5);
   dishGeo.rotateX(-Math.PI / 2); // concave side faces +z (towards the Earth after lookAt)
   dishGeo.translate(0, 0, 0.26);
-  const dish = new THREE.Mesh(dishGeo, new THREE.MeshStandardMaterial({ color: 0xf2f2f2, roughness: 0.4, side: THREE.DoubleSide }));
-  const feed = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.2, 6).rotateX(Math.PI / 2).translate(0, 0, 0.1), GREY);
-  const yoke = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, 0.08), DARK);
-  for (const m of [dish, feed, yoke]) m.castShadow = true;
+  const dishMat = own(WHITE);
+  dishMat.side = THREE.DoubleSide;
+  const dish = new THREE.Mesh(dishGeo, dishMat);
+  const feed = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.2, 6).rotateX(Math.PI / 2).translate(0, 0, 0.1), greyMat);
+  const yoke = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, 0.08), darkMat);
+  for (const m of [dish, feed, yoke]) m.castShadow = m.receiveShadow = true;
   hga.add(dish, feed, yoke);
   root.add(hga);
 
   // ---- wheels and suspension legs (instanced: 1 draw call each)
-  const wheels = new THREE.InstancedMesh(wheelGeometry(), GREY, 4);
+  const wheels = new THREE.InstancedMesh(wheelGeometry(), greyMat, 4);
   const strutGeo = new THREE.CylinderGeometry(0.035, 0.035, 1, 8).translate(0, 0.5, 0);
-  const legs = new THREE.InstancedMesh(strutGeo, DARK, 4);
+  const legs = new THREE.InstancedMesh(strutGeo, darkMat, 4);
   for (const m of [wheels, legs]) {
-    m.castShadow = true;
+    m.castShadow = m.receiveShadow = true;
     m.frustumCulled = false; // instances move every frame: never cull the rover by a stale bounding sphere
     m.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
     root.add(m);
