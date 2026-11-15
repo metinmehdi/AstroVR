@@ -339,9 +339,9 @@ export class AstronautMission {
   }
 
   /* ---------------------------------------------------------------- radio + storm */
-  onRadio(msg: RadioMessage) {
+  onRadio(msg: RadioMessage, withSound = true) {
     const lang = this.c.getLang();
-    this.audio.radio(msg.type, msg.at);
+    if (withSound) this.audio.radio(msg.type, msg.at);
     this.guide.say(lineText(RADIO, msg.type, lang));
     this.clearCopy();
     const btn = makeButton('✅', 'COPY', '#3ddc84', 0.7);

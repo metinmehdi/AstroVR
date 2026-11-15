@@ -181,7 +181,9 @@ export interface RadioMessage {
 export type FastMsg =
   | { k: 'ping'; id: number; t0: number }
   | { k: 'pong'; id: number; t0: number; tl: number }
-  | { k: 'voice'; id: string; line: string; lang: Lang; at: number; kind: 'suit' };
+  | { k: 'voice'; id: string; line: string; lang: Lang; at: number; kind: 'suit' }
+  | { k: 'cal'; id: string; at: number } // sound-sync calibration: beep at `at` (shared clock)
+  | { k: 'calres'; id: string; ms: number | null }; // measured extra delay of the laptop's sound
 
 /** WebRTC signalling for the live phone → Mission Control mirror (carried by the reliable transport). */
 export interface RtcSignal {

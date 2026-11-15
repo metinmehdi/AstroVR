@@ -27,10 +27,11 @@ export function startClockServer(transport: Transport): () => void {
 
 /** Phone: measure the offset to the laptop clock (burst at start, then every 2 s). */
 export function startClockClient(transport: Transport): () => void {
+  const base = Math.floor(Math.random() * 1e9) * 1000; // our ping ids: other clients' pongs are ignored
   let n = 0;
-  const ping = () => transport.sendFast({ k: 'ping', id: ++n, t0: localNow() });
+  const ping = () => transport.sendFast({ k: 'ping', id: base + (++n % 1000), t0: localNow() });
   const off = transport.onFast((m) => {
-    if (m.k !== 'pong') return;
+    if (m.k !== 'pong' || m.id < base || m.id >= base + 1000) return;
     const t1 = localNow();
     const rtt = t1 - m.t0;
     if (rtt < 0 || rtt > 3000) return;
@@ -43,10 +44,15 @@ export function startClockClient(transport: Transport): () => void {
     synced = true;
   });
   const burst: number[] = [];
-  for (let i = 0; i < 8; i++) burst.push(window.setTimeout(ping, 200 + i * 180));
+  const doBurst = () => {
+    for (let i = 0; i < 8; i++) burst.push(window.setTimeout(ping, 150 + i * 160));
+  };
+  doBurst();
+  const offConn = transport.onConnection((ok) => ok && doBurst()); // pings sent before the channel joined were lost
   const timer = window.setInterval(ping, 2000);
   return () => {
     off();
+    offConn();
     burst.forEach(clearTimeout);
     clearInterval(timer);
   };

@@ -215,7 +215,7 @@ export class SuitAudio {
     if (!this.voice) return;
     const lang = this._lang;
     const dur = this.voice.duration(voiceUrl(lang, id)) ?? text.split(/\s+/).length / 2.6 + 0.5;
-    const at = Math.max(sharedNow() + 450, this.busyUntil + 250);
+    const at = Math.max(sharedNow() + 900, this.busyUntil + 250); // 0.9 s: enough for the cue to reach the laptop
     this.busyUntil = at + dur * 1000;
     this.share?.({ k: 'voice', id: makeId(), line: id, lang, at, kind: 'suit' });
     void this.voice.sayAt(lang, id, at, 0.9);

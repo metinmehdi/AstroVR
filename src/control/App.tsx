@@ -10,7 +10,7 @@ import { FlightFilm } from './FlightFilm';
 import { onFilmProgress, preloadFilm } from '../shared/filmCache';
 import { sharedNow, startClockServer } from '../shared/clock';
 import { radioCallAt } from '../audio/voice';
-import { installLaptopAudio, laptopVoice, setLaptopAudioLang } from './laptopAudio';
+import { calibrateWithPhone, installLaptopAudio, laptopDelay, laptopVoice, setLaptopAudioLang } from './laptopAudio';
 import QRCode from 'qrcode';
 import { createTransport, type Transport } from '../shared/transport';
 import { astronautUrl, COMM_DELAY_MS, makeId, makeRoomCode, STATE_PUBLISH_HZ } from '../shared/protocol';
@@ -64,6 +64,8 @@ export function App() {
   const [shortFlight, setShortFlight] = useState(() => urlFlags.get('pitch') === '1');
   const [story, setStory] = useState<null | 'preview' | 'start' | 'record'>(null);
   const [filmPct, setFilmPct] = useState(0);
+  const [syncState, setSyncState] = useState<'idle' | 'busy' | 'ok' | 'fail'>('idle');
+  const [syncDelay, setSyncDelay] = useState<number | null>(() => laptopDelay());
   useEffect(() => {
     void preloadFilm(); // the real flight footage, ready long before liftoff
     installLaptopAudio(); // voices in sync with the headset (opens on the operator's first click)
@@ -100,9 +102,13 @@ export function App() {
       transport.onConnection(setConnected);
       transport.onPose((p) => (poseRef.current = p));
       startClockServer(transport); // this laptop is the shared clock
+      const heard = new Set<string>();
       // the headset's suit computer lines, spoken here at the same instant (the room hears what the cadet hears)
       transport.onFast((m) => {
-        if (m.k === 'voice') void laptopVoice()?.sayAt(m.lang, m.line, m.at, 0.75);
+        if (m.k === 'voice' && !heard.has(m.id)) {
+          heard.add(m.id);
+          void laptopVoice()?.sayAt(m.lang, m.line, m.at, 0.75);
+        }
       });
       transport.onAction((env) => {
         if (env.action.kind === 'ready') setReady(true);
@@ -254,9 +260,21 @@ export function App() {
           cmd({ kind: 'start' }); // the cadet waits in the capsule on the pad
           if (urlFlags.get('flight') === '0') cmd({ kind: 'skipFlight' });
           else if (storyOn) setStory('start');
-          else cmd({ kind: 'launch', short: shortFlight, wall: sharedNow() + 500 });
+          else cmd({ kind: 'launch', short: shortFlight, wall: sharedNow() + 1500 });
         }}
         film={{ laptop: filmPct, phone: s.filmReady }}
+        sync={{
+          state: syncState,
+          delay: syncDelay,
+          run: () => {
+            if (!tx.current) return;
+            setSyncState('busy');
+            void calibrateWithPhone(tx.current).then((d) => {
+              setSyncState(d === null ? 'fail' : 'ok');
+              if (d !== null) setSyncDelay(d);
+            });
+          },
+        }}
         story={{
           on: storyOn,
           setOn: setStoryOn,
@@ -372,7 +390,7 @@ export function App() {
             if (storyRun.current) cmd({ kind: 'story', play: false });
             storyRun.current = null;
             setStorySkip(false);
-            if (story === 'start') cmd({ kind: 'launch', short: shortFlight, wall: sharedNow() + 500 });
+            if (story === 'start') cmd({ kind: 'launch', short: shortFlight, wall: sharedNow() + 1500 });
             setStory(null);
           }}
         />

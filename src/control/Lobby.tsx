@@ -21,6 +21,7 @@ export function Lobby({
   onPreSkip,
   story,
   film,
+  sync,
 }: {
   lang: Lang;
   qr: string;
@@ -43,6 +44,8 @@ export function Lobby({
   };
   /** real flight footage readiness: laptop download 0..1, phone ready */
   film: { laptop: number; phone: boolean };
+  /** sound sync with the headset: run the calibration; current delay */
+  sync?: { run: () => void; state: 'idle' | 'busy' | 'ok' | 'fail'; delay: number | null };
 }) {
   const az = lang === 'az';
   return (
@@ -88,6 +91,24 @@ export function Lobby({
               <Icon name="play" size={22} />
               {t(lang, 'control.start')}
             </button>
+            {sync && (
+              <button
+                type="button"
+                className={`film-ready ${sync.state === 'ok' || (sync.state === 'idle' && sync.delay !== null) ? 'ok' : ''}`}
+                disabled={!ready || sync.state === 'busy'}
+                onClick={sync.run}
+                title={az ? 'Telefonu laptopun dinamikinin yanında tutun' : 'Hold the phone near the laptop speaker'}
+              >
+                🔊 {az ? 'Səsi sinxronla' : 'Sync sound'}:{' '}
+                {sync.state === 'busy'
+                  ? az ? 'ölçülür… (sakitlik)' : 'measuring… (quiet please)'
+                  : sync.state === 'fail'
+                    ? az ? 'eşidilmədi, yenə bas' : 'not heard, press again'
+                    : sync.delay !== null
+                      ? `${sync.delay >= 0 ? '+' : ''}${sync.delay} ms ✓`
+                      : ready ? (az ? 'bas (telefon hazırdır)' : 'press (phone ready)') : az ? 'telefonu gözləyir' : 'waiting for the phone'}
+              </button>
+            )}
             <div className={`film-ready ${film.laptop >= 1 && film.phone ? 'ok' : ''}`}>
               🎬 {az ? 'Real NASA kadrları' : 'Real NASA footage'}: {az ? 'noutbuk' : 'laptop'} {film.laptop >= 1 ? '✓' : `${Math.round(film.laptop * 100)}%`} ·{' '}
               {az ? 'telefon' : 'phone'} {film.phone ? '✓' : az ? 'yüklənir…' : 'loading…'}

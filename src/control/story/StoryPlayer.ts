@@ -13,6 +13,7 @@ import { createMoonScene, type MoonScene } from '../../scene/createMoonScene';
 import { NOBILE_MAY2024 as SCENARIO } from '../../shared/scenario';
 import { STORY_SHOTS as SHOTS, StoryCanvas, storyLineAt, storyTimeline, type ShotKind, type Timeline } from '../../shared/storyFrames';
 import { sharedNow } from '../../shared/clock';
+import { laptopVoice } from '../laptopAudio';
 import type { Lang } from '../../shared/types';
 
 const W = 1600;
@@ -110,7 +111,7 @@ export class StoryPlayer {
       voices.map((v) => v?.dur ?? null),
     );
     const tl = this.tl;
-    const lead = 0.25;
+    const lead = 1.0; // the headset needs the start time before the first line
     const a0 = this.ctx.currentTime + lead;
     this.t0 = performance.now() + lead * 1000;
     this.score.story(tl.starts, tl.total, a0);
@@ -145,7 +146,7 @@ export class StoryPlayer {
       this.recorder.start(500);
     }
     const lat = (this.ctx as AudioContext & { outputLatency?: number }).outputLatency || this.ctx.baseLatency || 0;
-    this.opts.onPlay?.(tl, sharedNow() + (lead + lat) * 1000);
+    this.opts.onPlay?.(tl, sharedNow() + (lead + lat) * 1000 + (laptopVoice()?.extraLatencyMs ?? 0));
     const loop = () => {
       if (this.stopped) return;
       const el = Math.max(0, (performance.now() - this.t0) / 1000);

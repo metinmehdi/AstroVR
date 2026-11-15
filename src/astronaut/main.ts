@@ -23,6 +23,7 @@ import { preloadFilm } from '../shared/filmCache';
 import { clockInfo, sharedNow, startClockClient } from '../shared/clock';
 import { ROAR_URL, filmPlan } from '../shared/flightFilm';
 import { STORY_SHOTS, storyLineAt } from '../shared/storyFrames';
+import { measureOnPhone } from '../audio/calibrate';
 import { scheduleFlightSound } from '../audio/flightSound';
 import { prefetchAudio, prefetchLines, type Playing } from '../audio/voice';
 import { ALL_LINES } from '../audio/engine';
@@ -84,6 +85,31 @@ async function main() {
 
   const transport = await createTransport(code);
   startClockClient(transport); // one clock with Mission Control → voices play on both devices at the same instant
+  // sound-sync calibration (Mission Control's "Sync sound"): beep, listen with the microphone, report the gap
+  const calSeen = new Set<string>();
+  transport.onFast((m) => {
+    if (m.k !== 'cal' || calSeen.has(m.id)) return;
+    calSeen.add(m.id);
+    const reply = (ms: number | null) => {
+      transport.sendFast({ k: 'calres', id: m.id, ms });
+      setTimeout(() => transport.sendFast({ k: 'calres', id: m.id, ms }), 150);
+    };
+    const v = mission.audio.voice;
+    if (!v || !navigator.mediaDevices?.getUserMedia) return reply(null);
+    void navigator.mediaDevices
+      .getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } })
+      .then(async (mic) => {
+        try {
+          reply(await measureOnPhone(v, mic, m.at, sharedNow));
+        } finally {
+          mic.getTracks().forEach((t) => t.stop()); // release the mic (iPhone would keep audio on the earpiece)
+        }
+      })
+      .catch(() => reply(null));
+  });
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden && started) mission.audio.unlock(); // the audio clock froze while the screen was off
+  });
 
   // ---- three.js
   // sharp in a VR box: antialiased, close to the screen's real resolution (adapted to the phone's speed below)
@@ -148,7 +174,8 @@ async function main() {
     if (msg.lost) return;
     // Mission Control chose the moment (send + light delay): both devices play the call together
     const at = msg.at ?? sharedNow() + COMM_DELAY_MS;
-    setTimeout(() => mission.onRadio({ ...msg, at }), Math.max(0, at - 320 - sharedNow()));
+    mission.audio.radio(msg.type, at); // book the sound now (beeps 0.3 s before `at` need the head start)
+    setTimeout(() => mission.onRadio({ ...msg, at }, false), Math.max(0, at - 320 - sharedNow()));
   });
 
   // rocket flight to the Moon (story mode): the cadet waits in the capsule, Mission Control launches after the story
@@ -236,7 +263,11 @@ async function main() {
 
   startBtn.onclick = async () => {
     mission.audio.unlock(); // must happen inside the tap
-    mission.audio.share = (m) => transport.sendFast(m); // suit lines: Mission Control speaks them at the same instant
+    mission.audio.share = (m) => {
+      // suit lines: Mission Control speaks them at the same instant (sent twice: the fast channel can drop one)
+      transport.sendFast(m);
+      setTimeout(() => transport.sendFast(m), 120);
+    };
     flight.primeVideo(); // the real window film may then play without another gesture
     void preloadFilm().then((src) => src.startsWith('blob:') && transport.sendAction({ kind: 'filmReady' }));
     await requestOrientationPermission();

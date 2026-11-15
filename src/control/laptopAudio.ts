@@ -5,6 +5,10 @@
  */
 import { FLIGHT, RADIO, STORY, SUIT } from '../audio/lines';
 import { VoicePlayer, prefetchAudio, prefetchLines } from '../audio/voice';
+import { playLaptopBeeps } from '../audio/calibrate';
+import { sharedNow } from '../shared/clock';
+import { makeId } from '../shared/protocol';
+import type { Transport } from '../shared/transport/types';
 import { ROAR_URL } from '../shared/flightFilm';
 import type { Lang } from '../shared/types';
 
@@ -49,6 +53,50 @@ export function installLaptopAudio() {
 
 export function laptopVoice(): VoicePlayer | null {
   return player;
+}
+
+/** current extra output delay of this laptop (ms), null if never calibrated */
+export function laptopDelay(): number | null {
+  try {
+    const v = localStorage.getItem('astrovr.audioDelay');
+    return v === null ? null : Number(v);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Sound-sync calibration with the phone's microphone (src/audio/calibrate.ts). Resolves with the new delay (ms) or
+ * null if the phone could not hear both beeps clearly (quiet room helps; phone near the laptop speaker).
+ */
+export function calibrateWithPhone(transport: Transport): Promise<number | null> {
+  unlock();
+  const p = player!;
+  const id = makeId();
+  const at = sharedNow() + 3200; // time for the phone to open its microphone
+  transport.sendFast({ k: 'cal', id, at });
+  setTimeout(() => transport.sendFast({ k: 'cal', id, at }), 150);
+  playLaptopBeeps(p, at);
+  return new Promise((resolve) => {
+    const off = transport.onFast((m) => {
+      if (m.k !== 'calres' || m.id !== id) return;
+      off();
+      clearTimeout(timer);
+      if (m.ms === null) return resolve(null);
+      const next = Math.max(-300, Math.min(800, Math.round(p.extraLatencyMs + m.ms)));
+      p.extraLatencyMs = next;
+      try {
+        localStorage.setItem('astrovr.audioDelay', String(next));
+      } catch {
+        /* private mode */
+      }
+      resolve(next);
+    });
+    const timer = setTimeout(() => {
+      off();
+      resolve(null);
+    }, 12000);
+  });
 }
 
 export function setLaptopAudioLang(l: Lang) {

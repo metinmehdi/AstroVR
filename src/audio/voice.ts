@@ -125,7 +125,7 @@ export class VoicePlayer {
     const buf = this.ready.get(url) ?? (await this.load(url, true));
     if (!buf || !alive()) return null;
     const ctx = this.ctx;
-    if (ctx.state === 'suspended') void ctx.resume();
+    if (ctx.state !== 'running') void ctx.resume();
     let when = this.ctxTimeFor(at);
     let offset = 0;
     const now = ctx.currentTime + 0.02;
