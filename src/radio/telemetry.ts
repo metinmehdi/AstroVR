@@ -20,12 +20,46 @@ const PHASE: Record<Phase, Record<Lang, string>> = {
 
 const r1 = (n: number) => Math.round(n * 10) / 10;
 
+/**
+ * Before landing the crewmate is not on the Moon at all. The persona takes AstroVR's
+ * whereabouts from this note, so say it plainly and drop the surface lines (waypoint,
+ * dose, suit O₂) that would make the commander describe a moonwalk during the rocket ride.
+ */
+function awayLine(s: SimState, az: boolean): string | null {
+  if (s.phase === 'lobby') {
+    return az
+      ? 'AstroVR hələ Yerdədir, missiyaya hazırlaşır — Aya gəlməyib.'
+      : 'AstroVR is still on Earth getting ready — not on the Moon yet.';
+  }
+  const f = s.flight?.status;
+  if (f === 'pad') {
+    return az
+      ? 'AstroVR hələ Yerdədir: raketin başındakı kapsulda oturub, start meydançasında gözləyir. Hələ uçmayıb, Ayda DEYİL. Real uçuş təxminən üç gün çəkir, təlimdə isə startdan bir dəqiqəyə yaxın sonra bazanın yanına enəcək.'
+      : 'AstroVR is still on Earth, strapped into the capsule on top of the rocket on the launch pad. Has not launched, is NOT on the Moon. The real trip takes about three days; in training they land next to the base about a minute after liftoff.';
+  }
+  if (f === 'flying') {
+    return az
+      ? 'AstroVR indi kapsulda Aya uçur — hələ enməyib, səthdə DEYİL. Real uçuş təxminən üç gün çəkir, təlimdə qısaldılıb: bir dəqiqəyə yaxın bazanın yanına enəcək. Sən onu gözləyirsən.'
+      : 'AstroVR is flying to the Moon in the capsule right now — has NOT landed, is NOT on the surface. The real trip takes about three days; in training it is shortened and they land next to the base in about a minute. You are waiting for them.';
+  }
+  return null;
+}
+
 export function telemetryNote(s: SimState | null, lang: Lang): string | null {
   if (!s) return null;
   const az = lang === 'az';
+  const obj = currentObjective(s);
+  const away = awayLine(s, az);
+  if (away) {
+    return [
+      az ? '[TELEMETRİYA — səsli oxuma, yalnız soruşulsa istifadə et]' : '[TELEMETRY — never read aloud, use only if asked]',
+      az ? `Faza: ${PHASE[s.phase].az}.` : `Phase: ${PHASE[s.phase].en}.`,
+      away,
+      az ? `İndi: ${obj.control.az}` : `Now: ${obj.control.en}`,
+    ].join(' ');
+  }
   const wp = NOBILE_MAY2024.waypoints.find((w) => w.id === s.astronaut.waypointId);
   const where = wp ? wp.label[lang] : s.astronaut.waypointId;
-  const obj = currentObjective(s);
   const sw = s.switches;
   // "bağlı" is ambiguous in Azerbaijani (switched off vs. sealed/safe) — the model read
   // "shielding bağlı" as "safe". Say plainly whether it works.
