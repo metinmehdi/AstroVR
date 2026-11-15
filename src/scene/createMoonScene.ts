@@ -273,7 +273,7 @@ export function createMoonScene(scenario: Scenario, quality: Quality = 'low'): M
   const heightAt = (x: number, z: number) => lolaHeight(x, z) + craterHeight(x, z) + microDetail(x, z);
   // vertex spacing ≈ 1.2 m around the outpost, growing to ≈ 11 m at the edges (src/scene/terrainMesh.ts)
   const { geometry: geo, meshHeightAt } = buildTerrainGeometry(heightAt, TERRAIN_SIZE, quality === 'high' ? 420 : 300);
-  const terrainMat = makeLunar(new THREE.MeshStandardMaterial({ color: 0xb4b0a8 }), { uvMetres: TERRAIN_SIZE, tile: 1.7 });
+  const terrainMat = makeLunar(new THREE.MeshStandardMaterial({ color: 0x9a968e }), { uvMetres: TERRAIN_SIZE, tile: 1.7 });
   // the REAL ground: LROC NAC orthomosaic of this exact square (shading flattened; we light it with the real Sun)
   new THREE.TextureLoader().load('/textures/nobile-albedo.jpg', (t) => {
     t.colorSpace = THREE.SRGBColorSpace;
@@ -299,14 +299,15 @@ export function createMoonScene(scenario: Scenario, quality: Quality = 'low'): M
   const sky = new THREE.Mesh(
     skyGeo,
     new THREE.ShaderMaterial({
-      uniforms: { map: { value: starTex }, sunDir: { value: sunDirForSky }, gain: { value: 1.25 } },
+      uniforms: { map: { value: starTex }, sunDir: { value: sunDirForSky }, gain: { value: 0.32 } },
       vertexShader: `varying vec2 vUv; varying vec3 vDir;
         void main(){ vUv = uv; vDir = normalize((modelMatrix * vec4(position, 0.0)).xyz);
           gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
       fragmentShader: `uniform sampler2D map; uniform vec3 sunDir; uniform float gain; varying vec2 vUv; varying vec3 vDir;
         void main(){ vec3 c = texture2D(map, vUv).rgb;
           float s = dot(normalize(vDir), sunDir);
-          c *= gain * (1.0 - 0.9 * smoothstep(0.55, 0.995, s));
+          // like a photo exposed for the sunlit ground: the faint Milky Way glow drops much more than the bright stars
+          c = pow(c, vec3(1.7)) * gain * (1.0 - 0.9 * smoothstep(0.55, 0.995, s));
           gl_FragColor = vec4(c, 1.0);
           #include <colorspace_fragment>
         }`,
@@ -320,7 +321,7 @@ export function createMoonScene(scenario: Scenario, quality: Quality = 'low'): M
 
   // ---- Sun: REAL position at the site on the mission date (NASA JPL Horizons) — only a few degrees above the horizon
   const sunDir = skyDirection(MISSION_SKY.sun.azimuthDeg, MISSION_SKY.sun.elevationDeg);
-  const sun = new THREE.DirectionalLight(0xfff6e8, 4.6);
+  const sun = new THREE.DirectionalLight(0xfff6e8, 3.6);
   sun.position.copy(sunDir).multiplyScalar(150);
   sun.castShadow = true;
   // grazing 4° light: one shadow texel spans ~0.8 m along the Sun's azimuth, i.e. ~0.8 m of light-space depth
@@ -347,13 +348,13 @@ export function createMoonScene(scenario: Scenario, quality: Quality = 'low'): M
   const glare = new THREE.Sprite(
     new THREE.SpriteMaterial({ map: glowTexture('255,244,220'), blending: THREE.AdditiveBlending, depthWrite: false, transparent: true }),
   );
-  glare.scale.set(170, 170, 1);
+  glare.scale.set(120, 120, 1);
   glare.position.copy(sunDisk.position);
   // the blinding Sun of an airless sky: hot core + wide halo + diffraction starburst
   const halo = new THREE.Sprite(
-    new THREE.SpriteMaterial({ map: glowTexture('255,236,205'), blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, opacity: 0.35 }),
+    new THREE.SpriteMaterial({ map: glowTexture('255,236,205'), blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, opacity: 0.18 }),
   );
-  halo.scale.set(620, 620, 1);
+  halo.scale.set(520, 520, 1);
   halo.position.copy(sunDisk.position);
   const burst = new THREE.Sprite(
     new THREE.SpriteMaterial({ map: starburstTexture(), blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, opacity: 0.9 }),
@@ -368,7 +369,7 @@ export function createMoonScene(scenario: Scenario, quality: Quality = 'low'): M
   for (const o of [glare, halo, burst, core]) (o.material as THREE.SpriteMaterial).toneMapped = false;
   scene.add(sunDisk, halo, glare, burst, core);
   // no atmosphere → deep shadows; a faint fill (sunlight bounced off the regolith + earthshine) keeps them readable
-  scene.add(new THREE.HemisphereLight(0x8e9bb8, 0x2a2622, 0.32)); // faint bluish earthshine from above, regolith bounce below
+  scene.add(new THREE.HemisphereLight(0x8e9bb8, 0x2a2622, 0.26)); // faint bluish earthshine from above, regolith bounce below
 
   // ---- Earth: REAL position (JPL Horizons) + REAL photo (NASA EPIC) with the REAL phase seen from the Moon
   const earthDir = skyDirection(MISSION_SKY.earth.azimuthDeg, MISSION_SKY.earth.elevationDeg);

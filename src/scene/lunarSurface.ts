@@ -145,7 +145,8 @@ export function makeLunar(
   const tile = opts.tile ?? 1.8;
   const reps = opts.uvMetres / tile;
   mat.normalMap = normal;
-  mat.normalScale = new THREE.Vector2(1, 1);
+  // gentle: at a 4° Sun every cm-scale facet facing the Sun would otherwise flash white (snow-like speckle)
+  mat.normalScale = new THREE.Vector2(0.6, 0.6);
   mat.roughness = 1;
   mat.metalness = 0;
   const uniforms = {
@@ -163,7 +164,7 @@ export function makeLunar(
     shader.fragmentShader = shader.fragmentShader
       .replace(
         '#include <common>',
-        '#include <common>\nvarying vec2 vLunarUv;\nuniform sampler2D uDetail;\nuniform float uReps;\nuniform float uDetailK;\nuniform float uFadeNear;\nuniform float uFadeFar;',
+        '#include <common>\nvarying vec2 vLunarUv;\nvec3 lunarGeoN = vec3(0.0, 0.0, 1.0);\nuniform sampler2D uDetail;\nuniform float uReps;\nuniform float uDetailK;\nuniform float uFadeNear;\nuniform float uFadeFar;',
       )
       // detail albedo at two scales (×1 and ×1/5.3, rotated) multiplies the real albedo
       .replace(
@@ -176,6 +177,7 @@ export function makeLunar(
           diffuseColor.rgb *= mix(1.0, d, uDetailK);
         }`,
       )
+      .replace('#include <normal_fragment_begin>', '#include <normal_fragment_begin>\nlunarGeoN = nonPerturbedNormal;')
       // regolith normals at the same two scales, blended
       .replace(
         '#include <normal_fragment_maps>',
@@ -200,12 +202,24 @@ export function makeLunar(
           // lunar-Lambert: equals Lambert at normal incidence/view, much flatter at grazing light (low polar Sun)
           float lunarL = mix( dotNL, min( 2.0 * dotNL / ( dotNL + muV + 1e-4 ), 1.4 ), 0.5 ) * smoothstep( 0.0, 0.03, dotNL );
           float g = acos( clamp( dot( directLight.direction, geometryViewDir ), -1.0, 1.0 ) );
+          // the cm-scale regolith relief only MODULATES the terrain's own (macro) lighting, within limits:
+          // a grain facing away from the 4° Sun is dim, never a black hole; one facing it is brighter, never white snow
+          // (cast shadows stay black: they are already inside directLight.color)
+          float dotNLg = saturate( dot( lunarGeoN, directLight.direction ) );
+          float muVg = saturate( dot( lunarGeoN, geometryViewDir ) );
+          float lunarG = mix( dotNLg, min( 2.0 * dotNLg / ( dotNLg + muVg + 1e-4 ), 1.4 ), 0.5 ) * smoothstep( 0.0, 0.03, dotNLg );
+          lunarL = lunarG * clamp( lunarL / max( lunarG, 1e-3 ), 0.35, 1.6 );
           lunarL *= 1.0 + 0.45 * exp( -g / 0.09 );
           vec3 irradiance = lunarL * directLight.color;`,
+        )
+        // dusty regolith has no shine; GGX on facets seen edge-on (N·V ≈ 0) also returns huge values → white flecks
+        .replace(
+          'reflectedLight.directSpecular += irradiance * specularBRDF * material.multiScatteringCompensation;',
+          '/* regolith: no direct specular (GGX at grazing normal-mapped facets blows up to white flecks) */',
         ),
       );
   };
-  mat.customProgramCacheKey = () => 'lunar-regolith-v2';
+  mat.customProgramCacheKey = () => 'lunar-regolith-v6';
   mat.needsUpdate = true;
   return mat;
 }

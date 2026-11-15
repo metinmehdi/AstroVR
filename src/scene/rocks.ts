@@ -76,7 +76,7 @@ export function createRocks(
   const group = new THREE.Group();
   const VARIANTS = 5;
   const total = quality === 'high' ? 1100 : 650;
-  const mat = makeLunar(new THREE.MeshStandardMaterial({ color: 0x7d7a75 }), { uvMetres: 1, tile: 0.9, detailStrength: 0.7 });
+  const mat = makeLunar(new THREE.MeshStandardMaterial({ color: 0x504e4a }), { uvMetres: 1, tile: 0.9, detailStrength: 0.7 });
   const segs: [number, number, number, number][] = [];
   for (const route of Object.values(scenario.routes)) {
     for (let i = 1; i < route.length; i++) {
@@ -120,7 +120,7 @@ export function createRocks(
     m.compose(new THREE.Vector3(x, heightAt(x, z) + size * 0.55 - sink, z), q, new THREE.Vector3(size, size, size));
     const v = n % VARIANTS;
     buckets[v].push(m.clone());
-    const tone = 0.8 + rnd() * 0.35; // fresh rocks brighter, old ones darker
+    const tone = 0.75 + rnd() * 0.3; // fresh rocks brighter, old ones darker (real lunar rocks: albedo ≈ 0.1–0.2)
     colors[v].push(new THREE.Color(tone, tone * 0.99, tone * 0.97));
     n++;
   }
