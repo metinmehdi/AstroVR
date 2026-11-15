@@ -43,7 +43,7 @@ export function createHorizon(localHeight: (x: number, z: number) => number, hal
 
   const pos = new Float32Array(NR * AZ * 3);
   const col = new Float32Array(NR * AZ * 3);
-  const albedo = new THREE.Color(0x9a968f).multiplyScalar(0.3); // same regolith as the walkable terrain (× grain texture)
+  const albedo = new THREE.Color(0x9a968f).multiplyScalar(0.52); // same regolith as the walkable terrain (× grain texture)
   for (let i = 0; i < NR; i++) {
     const r = radii[i];
     const k = squash(r) / r;
@@ -59,7 +59,7 @@ export function createHorizon(localHeight: (x: number, z: number) => number, hal
       pos[v + 1] = EYE + (h - EYE) * k;
       pos[v + 2] = z * k;
       const s = ring.shade[i * AZ + a] / 255;
-      const lum = 1.9 * s + 0.05; // sunlight (N·L × lit) + faint fill, tuned to match the lit walkable terrain at the seam
+      const lum = 1.9 * s + 0.07; // sunlight (N·L × lit) + faint fill, tuned to match the lit walkable terrain at the seam
       col[v] = albedo.r * lum;
       col[v + 1] = albedo.g * lum;
       col[v + 2] = albedo.b * lum;

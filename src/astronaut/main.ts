@@ -97,6 +97,7 @@ async function main() {
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.3;
   renderer.shadowMap.type = THREE.PCFShadowMap;
+  renderer.shadowMap.autoUpdate = false; // the Sun is fixed: re-render shadows only when the astronaut moves (moon.takeShadowUpdate)
   document.body.appendChild(renderer.domElement);
 
   const camera = new THREE.PerspectiveCamera(80, innerWidth / innerHeight, 0.05, 2000);
@@ -290,6 +291,10 @@ async function main() {
     flight.update(dt);
     lamp.visible = !flight.active; // the helmet lamp is for the polar shadows, not inside the capsule
     mission.update(dt);
+    if (!flight.active) {
+      moon.setFocus(rig.position.x, rig.position.z);
+      if (moon.takeShadowUpdate()) renderer.shadowMap.needsUpdate = true;
+    }
     stereo.render(flight.active ? flight.scene : moon.scene, camera);
     // the projector renders the flight itself (TwinFlight) → no video copy needed then (saves the phone's GPU)
     if (!flight.active && params.get('mirror') === 'video') mirrorTap.capture(renderer.domElement, stereo.enabled, now);

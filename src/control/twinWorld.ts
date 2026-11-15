@@ -24,6 +24,7 @@ let world: {
   moon: MoonScene;
   mission: AstronautMission;
   lamp: THREE.SpotLight;
+  rig: THREE.Object3D;
 } | null = null;
 let feed: Feed | null = null;
 let host: HTMLElement | null = null;
@@ -38,6 +39,7 @@ function build() {
   renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFShadowMap;
+  renderer.shadowMap.autoUpdate = false;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.3;
   renderer.domElement.className = 'twin-canvas';
@@ -49,7 +51,8 @@ function build() {
   lamp.target.position.set(0, -1.2, -6);
   camera.add(lamp, lamp.target);
   addVisor(camera);
-  const moon = createMoonScene(SCENARIO, 'low');
+  // the projector gets the ultra version (?q=low for weak laptops / headless tests)
+  const moon = createMoonScene(SCENARIO, new URLSearchParams(location.search).get('q') === 'low' ? 'low' : 'high');
   moon.scene.add(rig);
   const mission = new AstronautMission({
     scene: moon.scene,
@@ -62,7 +65,7 @@ function build() {
     getLang: () => feed!.getLang(),
   });
   mission.showHud(false); // the console already shows the step, the task and the vitals
-  world = { renderer, camera, moon, mission, lamp };
+  world = { renderer, camera, moon, mission, lamp, rig };
 }
 
 function fit() {
@@ -97,6 +100,8 @@ function loop(now: number) {
   world.mission.gazeInput.only = []; // look, never select
   world.moon.update(dt, s);
   world.mission.update(dt);
+  world.moon.setFocus(world.rig.position.x, world.rig.position.z);
+  if (world.moon.takeShadowUpdate()) world.renderer.shadowMap.needsUpdate = true;
   world.renderer.render(world.moon.scene, world.camera);
 }
 

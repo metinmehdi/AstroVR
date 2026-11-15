@@ -60,7 +60,7 @@
    "name": "LRO LOLA 5 m terrain, 480 m × 480 m around the site (centre elevation 6762 m)",
    "org": "NASA GSFC PGDA",
    "url": "https://pgda.gsfc.nasa.gov/products/78",
-   "usedFor": "The ground you walk on is real Moon terrain measured by laser from orbit"
+   "usedFor": "Earlier terrain version; replaced by the 5 m Shape-from-Shading elevation (same LOLA reference)"
   },
   {
    "id": "epic",
@@ -180,6 +180,27 @@
    "org": "NASA (Image and Video Library)",
    "url": "https://images.nasa.gov/",
    "usedFor": "The launch sound from ignition to engine cutoff (silence after: no sound in vacuum)"
+  },
+  {
+   "id": "sfs-terrain",
+   "name": "NASA 5 m/px Shape-from-Shading elevation of Nobile Rim 1 (Artemis III candidate region A3CLR22-#7), 1280 m × 1280 m",
+   "org": "NASA GSFC PGDA (Bertone et al. 2026, PSJ), tied to LRO LOLA",
+   "url": "https://pgda.gsfc.nasa.gov/products/104",
+   "usedFor": "The terrain you walk on in VR (real relief down to 5 m)"
+  },
+  {
+   "id": "lroc-orthomosaic",
+   "name": "LROC NAC maximally-lit orthomosaic of Nobile Rim 1 (5 m/px), same square",
+   "org": "NASA LRO LROC NAC via NASA GSFC PGDA product 104",
+   "url": "https://doi.org/10.5281/zenodo.17954508",
+   "usedFor": "The real colour/brightness pattern of the ground (craters, rays) — lit by the real Sun in the app"
+  },
+  {
+   "id": "deep-star-maps",
+   "name": "NASA SVS Deep Star Maps 2020 (4K, real star catalogues, Milky Way)",
+   "org": "NASA Scientific Visualization Studio",
+   "url": "https://svs.gsfc.nasa.gov/4851",
+   "usedFor": "The black lunar sky with the real stars and Milky Way, oriented for the lunar south pole"
   }
  ]
 }

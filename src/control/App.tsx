@@ -128,9 +128,18 @@ export function App() {
   // simulation loop (10 Hz) + publish (4 Hz) + UI refresh (4 Hz)
   useEffect(() => {
     let acc = 0;
+    let last = performance.now();
+    let carry = 0;
     const id = setInterval(() => {
-      step(sim.current, TICK_S, SCENARIO);
-      acc += TICK_S;
+      // follow REAL time even when the page is busy (3D view on a weak laptop): run as many fixed ticks as elapsed
+      const now = performance.now();
+      carry += Math.min(2, (now - last) / 1000);
+      last = now;
+      while (carry >= TICK_S) {
+        step(sim.current, TICK_S, SCENARIO);
+        carry -= TICK_S;
+        acc += TICK_S;
+      }
       if (acc >= 1 / STATE_PUBLISH_HZ) {
         acc = 0;
         tx.current?.publishState(structuredClone(sim.current));
