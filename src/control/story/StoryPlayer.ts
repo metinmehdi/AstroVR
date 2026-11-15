@@ -1,6 +1,6 @@
 /**
  * Campaign-style story intro (~35 s) for the projector: real NASA images (Apollo 8 Earthrise, Apollo 11 bootprint,
- * SDO's view of the real 11 May 2024 flare), the real south-pole terrain in 3D, our rocket at dawn, and the title.
+ * SDO's view of the real 11 May 2024 flare), the real south-pole terrain in 3D, the REAL Artemis I night launch (NASA photos), and the title.
  * Frames are drawn by the shared StoryCanvas (also used by the phone's in-capsule cinema screen); here the two 3D
  * shots are rendered live with WebGL. The canvas + sound can be recorded into a video file.
  * Narration: pre-generated TTS files (public/audio/{lang}/storyN.mp3) scheduled sample-accurately with Web Audio;
@@ -10,7 +10,6 @@ import * as THREE from 'three';
 import available from '../../audio/available.json';
 import { Score } from '../../audio/score';
 import { createMoonScene, type MoonScene } from '../../scene/createMoonScene';
-import { createLaunchTower, createPadGround, createRocket, createSkyDome } from '../../scene/rocket';
 import { NOBILE_MAY2024 as SCENARIO } from '../../shared/scenario';
 import { STORY_SHOTS as SHOTS, StoryCanvas, storyLineAt, storyTimeline, type ShotKind, type Timeline } from '../../shared/storyFrames';
 import { sharedNow } from '../../shared/clock';
@@ -42,7 +41,6 @@ export class StoryPlayer {
   private renderer: THREE.WebGLRenderer;
   private camera = new THREE.PerspectiveCamera(50, W / H, 0.5, 4000);
   private moon: MoonScene | null = null;
-  private pad = new THREE.Scene();
   private ctx: AudioContext;
   private master: GainNode;
   private score: Score;
@@ -54,7 +52,6 @@ export class StoryPlayer {
   private raf = 0;
   private stopped = false;
   private timers: number[] = [];
-  private vapor: THREE.Sprite[] = [];
   private els: HTMLAudioElement[] = [];
 
   constructor(private opts: StoryOptions) {
@@ -79,7 +76,6 @@ export class StoryPlayer {
     void this.ctx.resume();
     this.sc.clear();
     await this.sc.load(false);
-    this.buildPad();
     this.moon = createMoonScene(SCENARIO, 'low');
     const lang = this.opts.lang;
     return Promise.all(
@@ -210,7 +206,7 @@ export class StoryPlayer {
   }
 
   /** Debug: render a 3D shot at progress u and return it as a JPEG data URL (used to make the phone's stills). */
-  async still(kind: 'moon3d' | 'pad3d', u: number): Promise<string> {
+  async still(kind: 'moon3d', u: number): Promise<string> {
     if (!this.moon) await this.prepare();
     this.render3D(kind, u, u * 6);
     return this.renderer.domElement.toDataURL('image/jpeg', 0.88);
@@ -218,7 +214,7 @@ export class StoryPlayer {
 
   /* ------------------------------------------------------------------ 3D shots */
 
-  private render3D(kind: ShotKind, u: number, local: number): HTMLCanvasElement | null {
+  private render3D(kind: ShotKind, u: number, _local: number): HTMLCanvasElement | null {
     const e = ease(u);
     const cam = this.camera;
     if (kind === 'moon3d' && this.moon) {
@@ -230,60 +226,6 @@ export class StoryPlayer {
       this.renderer.render(this.moon.scene, cam);
       return this.renderer.domElement;
     }
-    if (kind === 'pad3d') {
-      cam.fov = 42;
-      cam.position.set(THREE.MathUtils.lerp(-70, -42, e), THREE.MathUtils.lerp(6, 16, e), THREE.MathUtils.lerp(120, 78, e));
-      cam.lookAt(0, THREE.MathUtils.lerp(48, 70, e), 0);
-      cam.updateProjectionMatrix();
-      for (const s of this.vapor) {
-        const d = s.userData as { y0: number; a: number; sp: number };
-        const k = (local * d.sp * 0.25 + d.a) % 1;
-        s.position.set(Math.cos(d.a) * (4.6 + k * 6), d.y0 - k * 6, Math.sin(d.a) * (4.6 + k * 6));
-        s.scale.setScalar(4 + k * 10);
-        (s.material as THREE.SpriteMaterial).opacity = 0.2 * (1 - k);
-      }
-      this.renderer.render(this.pad, cam);
-      return this.renderer.domElement;
-    }
     return null;
-  }
-
-  private buildPad() {
-    const sky = createSkyDome(1800, true);
-    this.pad.add(sky.mesh);
-    this.pad.add(createPadGround(1700));
-    this.pad.add(createRocket());
-    const tower = createLaunchTower(100);
-    tower.position.x = 14;
-    this.pad.add(tower);
-    const sun = new THREE.DirectionalLight(0xffc48a, 3.2);
-    sun.position.set(-300, 60, -200);
-    sun.castShadow = true;
-    Object.assign(sun.shadow.camera, { left: -80, right: 80, top: 120, bottom: -10, near: 1, far: 900 });
-    sun.shadow.mapSize.set(2048, 2048);
-    // cool front fill from the camera side so the rocket is not a silhouette
-    const fill = new THREE.DirectionalLight(0x9fb4ff, 1.4);
-    fill.position.set(-120, 40, 260);
-    this.pad.add(sun, fill, new THREE.HemisphereLight(0x9cb8ff, 0x3a2a1c, 1.0));
-    const c = document.createElement('canvas');
-    c.width = c.height = 128;
-    const gg = c.getContext('2d')!;
-    const grd = gg.createRadialGradient(64, 64, 2, 64, 64, 64);
-    grd.addColorStop(0, 'rgba(255,240,210,1)');
-    grd.addColorStop(0.25, 'rgba(255,170,90,0.6)');
-    grd.addColorStop(1, 'rgba(255,120,40,0)');
-    gg.fillStyle = grd;
-    gg.fillRect(0, 0, 128, 128);
-    const glowTex = new THREE.CanvasTexture(c);
-    const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true }));
-    glow.position.set(-1300, 120, -900);
-    glow.scale.set(700, 700, 1);
-    this.pad.add(glow);
-    for (let i = 0; i < 14; i++) {
-      const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: 0xffffff, opacity: 0.18, transparent: true, depthWrite: false }));
-      s.userData = { y0: 8 + Math.random() * 50, a: Math.random() * Math.PI * 2, sp: 0.4 + Math.random() * 0.8 };
-      this.vapor.push(s);
-      this.pad.add(s);
-    }
   }
 }

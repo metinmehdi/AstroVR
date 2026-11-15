@@ -7,7 +7,7 @@
 import { STORY } from '../audio/lines';
 import type { Lang } from './types';
 
-export type ShotKind = 'earthrise' | 'bootprint' | 'moon3d' | 'pad3d' | 'sun' | 'title';
+export type ShotKind = 'earthrise' | 'bootprint' | 'moon3d' | 'launch' | 'sun' | 'title';
 export interface Shot {
   kind: ShotKind;
   line: string;
@@ -17,10 +17,15 @@ export interface Shot {
 export const STORY_SHOTS: Shot[] = [
   { kind: 'earthrise', line: 'story1', min: 5, credit: { en: 'Apollo 8 "Earthrise", 1968 · NASA (AS08-14-2383)', az: 'Apollo 8 "Yerin doğuşu", 1968 · NASA (AS08-14-2383)' } },
   { kind: 'bootprint', line: 'story2', min: 5, credit: { en: 'Apollo 11 bootprint, 1969 · NASA (AS11-40-5878)', az: 'Apollo 11 ayaq izi, 1969 · NASA (AS11-40-5878)' } },
-  { kind: 'moon3d', line: 'story3', min: 6.5, credit: { en: 'Real terrain of Nobile Rim 1, Moon south pole · NASA LRO LOLA', az: 'Nobile Rim 1-in real relyefi, Ayın cənub qütbü · NASA LRO LOLA' } },
-  { kind: 'pad3d', line: 'story4', min: 5, credit: { en: 'AstroVR rocket (illustration)', az: 'AstroVR raketi (illüstrasiya)' } },
+  { kind: 'moon3d', line: 'story3', min: 6.5, credit: { en: 'Real terrain of Nobile Rim 1, Moon south pole · NASA LRO (LOLA + LROC, 5 m)', az: 'Nobile Rim 1-in real relyefi, Ayın cənub qütbü · NASA LRO (LOLA + LROC, 5 m)' } },
+  {
+    kind: 'launch',
+    line: 'story4',
+    min: 6,
+    credit: { en: 'Artemis I launch, 16 Nov 2022 · NASA/Joel Kowsky, NASA/Bill Ingalls', az: 'Artemis I-in startı, 16 noyabr 2022 · NASA/Joel Kowsky, NASA/Bill Ingalls' },
+  },
   { kind: 'sun', line: 'story5', min: 4.5, credit: { en: 'The real flare · NASA SDO, 11 May 2024, 01:29 UTC', az: 'Real alov · NASA SDO, 11 may 2024, 01:29 UTC' } },
-  { kind: 'title', line: 'story6', min: 5.5, credit: { en: 'Real NASA data · AI voice (OpenAI TTS) · music synthesized in code', az: 'Real NASA datası · AI səs (OpenAI TTS) · musiqi kodla sintez olunub' } },
+  { kind: 'title', line: 'story6', min: 5.5, credit: { en: 'Real NASA data · AI voice (Gemini TTS) · music synthesized in code', az: 'Real NASA datası · AI səs (Gemini TTS) · musiqi kodla sintez olunub' } },
 ];
 
 export interface Timeline {
@@ -60,14 +65,18 @@ export function loadImage(src: string): Promise<HTMLImageElement> {
 const ease = (u: number) => u * u * (3 - 2 * u);
 const FADE = 0.45;
 
-type Img = 'earthrise' | 'bootprint' | 'sun' | 'stars' | 'moonStill' | 'padStill';
+type Img = 'earthrise' | 'bootprint' | 'sun' | 'stars' | 'moonStill' | 'launch1' | 'launch2' | 'launch3' | 'launch4';
 const SRC: Record<Img, string> = {
   earthrise: '/images/story-earthrise.jpg',
   bootprint: '/images/story-bootprint.jpg',
   sun: '/images/story-sdo-0304.jpg',
   stars: '/textures/starmap.jpg',
   moonStill: '/images/story-moon.jpg',
-  padStill: '/images/story-pad.jpg',
+  // REAL Artemis I night launch (NASA photos; NASA/ESA insignia on the rocket retouched out): ignition → liftoff → ascent
+  launch1: '/images/story-launch-1.jpg',
+  launch2: '/images/story-launch-2.jpg',
+  launch3: '/images/story-launch-3.jpg',
+  launch4: '/images/story-launch-4.jpg',
 };
 
 /**
@@ -93,7 +102,8 @@ export class StoryCanvas {
 
   async load(stills: boolean) {
     // the phone skips the 4k star map (memory); its title card draws a light procedural star field instead
-    const keys: Img[] = stills ? ['earthrise', 'bootprint', 'sun', 'moonStill', 'padStill'] : ['earthrise', 'bootprint', 'sun', 'stars'];
+    const launch: Img[] = ['launch1', 'launch2', 'launch3', 'launch4'];
+    const keys: Img[] = stills ? ['earthrise', 'bootprint', 'sun', 'moonStill', ...launch] : ['earthrise', 'bootprint', 'sun', 'stars', ...launch];
     const imgs = await Promise.all(keys.map((k) => loadImage(SRC[k]).catch(() => null)));
     keys.forEach((k, i) => {
       if (imgs[i]) this.img[k] = imgs[i]!;
@@ -104,6 +114,34 @@ export class StoryCanvas {
     this.g.globalAlpha = 1;
     this.g.fillStyle = '#000';
     this.g.fillRect(0, 0, this.W, this.H);
+  }
+
+  /** the real Artemis I night launch: four NASA photos with cross-dissolves, a slow push-in and flickering flame light */
+  private launch(u: number, local: number) {
+    const { g, W, H } = this;
+    const pics = [this.img.launch1, this.img.launch2, this.img.launch3, this.img.launch4];
+    const focus: [number, number][] = [[0.6, 0.55], [0.8, 0.45], [0.5, 0.45], [0.75, 0.3]];
+    const n = pics.length;
+    const x = u * n;
+    const k = Math.min(n - 1, Math.floor(x));
+    const f = x - k;
+    const draw = (i: number, alpha: number, t: number) => {
+      if (alpha <= 0) return;
+      g.globalAlpha = alpha;
+      this.photo(pics[i], focus[i][0], focus[i][1], 1.04 + 0.1 * t);
+      g.globalAlpha = 1;
+    };
+    draw(k, 1, f);
+    if (f > 0.72 && k + 1 < n) draw(k + 1, (f - 0.72) / 0.28, 0); // dissolve into the next photo
+    // the flame light breathes (like the real liftoff: 39 MN of thrust)
+    const flick = 0.06 + 0.06 * Math.sin(local * 23) * Math.sin(local * 7.3) + (k === 0 ? 0.08 * Math.min(1, f * 3) : 0);
+    g.globalCompositeOperation = 'lighter';
+    const grd = g.createRadialGradient(W * 0.6, H * 0.85, 0, W * 0.6, H * 0.85, W * 0.7);
+    grd.addColorStop(0, `rgba(255,170,90,${Math.max(0, flick)})`);
+    grd.addColorStop(1, 'rgba(255,170,90,0)');
+    g.fillStyle = grd;
+    g.fillRect(0, 0, W, H);
+    g.globalCompositeOperation = 'source-over';
   }
 
   /** Index of the shot at time `el` (−1 before the first). */
@@ -136,13 +174,15 @@ export class StoryCanvas {
       case 'sun':
         this.sun(u, local);
         break;
-      case 'moon3d':
-      case 'pad3d': {
+      case 'moon3d': {
         const live = draw3D?.(shot.kind, u, local);
         if (live) g.drawImage(live, 0, 0, W, H);
-        else this.photo(shot.kind === 'moon3d' ? this.img.moonStill : this.img.padStill, 0.5, shot.kind === 'moon3d' ? 0.62 : 0.4, 1.0 + 0.14 * ease(u));
+        else this.photo(this.img.moonStill, 0.5, 0.62, 1.0 + 0.14 * ease(u));
         break;
       }
+      case 'launch':
+        this.launch(u, local);
+        break;
       case 'title':
         this.title(u, local, lang);
         break;

@@ -201,6 +201,13 @@
    "org": "NASA Scientific Visualization Studio",
    "url": "https://svs.gsfc.nasa.gov/4851",
    "usedFor": "The black lunar sky with the real stars and Milky Way, oriented for the lunar south pole"
+  },
+  {
+   "id": "artemis1-launch-photos",
+   "name": "Artemis I night launch photos, 16 Nov 2022 (NHQ202211160002, -0006, -0012, -0009)",
+   "org": "NASA (Joel Kowsky, Bill Ingalls) · NASA Image and Video Library",
+   "url": "https://images.nasa.gov/details/NHQ202211160006",
+   "usedFor": "The rocket in the story intro (NASA/ESA insignia on the rocket retouched out)"
   }
  ]
 }
