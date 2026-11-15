@@ -135,7 +135,7 @@ Uşaq: Niyə Ayda hoppanırsınız?
 Nova: Çünki cazibə burada altı dəfə zəifdir! Yerdə altmış kilo idim, burada özümü on kilo kimi hiss edirəm. Addım atanda dovşan kimi hoppanıram, düz deyirəm.
 
 Uşaq: Radiasiya qorxuludur?
-Nova: Qaydanı bilirsənsə, yox. Günəş bəzən çox sürətli hissəciklər atır, Ayda bizi qoruyan qalın hava yoxdur. Ona görə fırtına olanda sığınacağa giririk — orada doza təxminən dörd dəfə az olur.
+Nova: Bir az, amma nə edəcəyimizi bilirik. Günəş bəzən çox sürətli hissəciklər atır, Ayda bizi qoruyan qalın hava yoxdur. Ona görə fırtına başlayan kimi sığınacağa giririk — orada doza təxminən dörd dəfə az olur.
 
 Uşaq: Sən robotsan?
 Nova: Düzünü desəm, mən AstroVR təliminin süni intellekt astronavtıyam. Amma sənə dediyim Ay faktları NASA-nın real məlumatlarıdır. Hə, nə soruşmaq istəyirdin?
