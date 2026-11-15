@@ -2,22 +2,28 @@
  * The lunar outpost, visible in VR AND in Mission Control's fallback view. Every Mission Control decision is VISIBLE:
  *   ☀️ VSAT mast rises (NASA Vertical Solar Array Technology idea: ~10 m masts above the long south-pole shadows)
  *   🌱 greenhouse grow lights switch on/off · 📡 antenna dish turns + blinks when on · 🛡️ shelter shield lights glow
+ * Signal lights (emissive + optical glare only, no extra scene lights; timed on the SHARED clock so the headset and the
+ * projector blink together): red obstruction light on top of the tall VSAT mast, white double strobe on the lander,
+ * airlock status lamp (green = normal, amber = storm warning, red = storm), habitat windows where the crew inside
+ * now and then walks past.
  * Generic, unbranded shapes (no agency logos). Placed around the airlock at the scene origin.
  */
 import * as THREE from 'three';
 import type { SimState } from '../shared/types';
+import { sharedNow } from '../shared/clock';
+import { makeLamp } from './glow';
 
 export interface Outpost {
   group: THREE.Group;
   update(dt: number, s: SimState | null): void;
 }
 
-const WHITE = new THREE.MeshStandardMaterial({ color: 0xe9ebee, roughness: 0.55, metalness: 0.15 });
-const GREY = new THREE.MeshStandardMaterial({ color: 0x8d939b, roughness: 0.6, metalness: 0.5 });
-const DARK = new THREE.MeshStandardMaterial({ color: 0x2a2f36, roughness: 0.8, metalness: 0.3 });
-const GOLD = new THREE.MeshStandardMaterial({ color: 0xc9a227, roughness: 0.35, metalness: 0.9 });
+export const WHITE = new THREE.MeshStandardMaterial({ color: 0xe9ebee, roughness: 0.55, metalness: 0.15 });
+export const GREY = new THREE.MeshStandardMaterial({ color: 0x8d939b, roughness: 0.6, metalness: 0.5 });
+export const DARK = new THREE.MeshStandardMaterial({ color: 0x2a2f36, roughness: 0.8, metalness: 0.3 });
+export const GOLD = new THREE.MeshStandardMaterial({ color: 0xc9a227, roughness: 0.35, metalness: 0.9 });
 
-function solarPanelTexture(): THREE.CanvasTexture {
+export function solarPanelTexture(): THREE.CanvasTexture {
   const c = document.createElement('canvas');
   c.width = 128;
   c.height = 256;
@@ -72,6 +78,10 @@ export function createOutpost(heightAt: (x: number, z: number) => number, sunDir
   shieldRing.rotation.x = Math.PI / 2;
   shieldRing.position.y = 2.65;
   airlock.add(wall, floor, roof, glass, cabin, shieldRing);
+  // status lamp on the roof edge above the window/hatch side: green = normal, amber = storm warning, red = storm
+  const status = makeLamp(0x2bd96b, 0.06, 0.9);
+  status.group.position.set(0, 2.9, -2.3);
+  airlock.add(status.group);
   place(airlock, 0, 0);
 
   // ---- habitat modules (south-east)
@@ -88,9 +98,12 @@ export function createOutpost(heightAt: (x: number, z: number) => number, sunDir
   const tunnel = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 0.7, 2.6, 16), GREY);
   tunnel.rotation.x = Math.PI / 2;
   tunnel.position.set(0, 1.9, 2.1);
-  const windows = new THREE.MeshBasicMaterial({ color: 0xffd9a0 });
+  // each window its own material: the crew inside walks past now and then; one window shows a cool screen light
+  const WINDOW_X = [-2.4, -1.2, 0, 1.2, 2.4];
+  const windowBase = [0xffd9a0, 0xffd29a, 0xffdca8, 0xbfd8ff, 0xffd6a0].map((c) => new THREE.Color(c));
+  const windowMats = windowBase.map((c) => new THREE.MeshBasicMaterial({ color: c.clone() }));
   for (let i = -2; i <= 2; i++) {
-    const w = new THREE.Mesh(new THREE.CircleGeometry(0.22, 16), windows);
+    const w = new THREE.Mesh(new THREE.CircleGeometry(0.22, 16), windowMats[i + 2]);
     w.position.set(i * 1.2, 2.3, -1.71);
     w.rotation.y = Math.PI;
     hab.add(w);
@@ -117,7 +130,9 @@ export function createOutpost(heightAt: (x: number, z: number) => number, sunDir
   // face the Sun (arrays track the low polar Sun around the horizon)
   const sunYaw = Math.atan2(sunDir.x, sunDir.z);
   panel.rotation.y = sunYaw;
-  vsat.add(mastBase, mast, panel);
+  // red obstruction light on the highest point (a 10 m mast in the dark polar shadows)
+  const obstruction = makeLamp(0xff2a1a, 0.06, 1.4);
+  vsat.add(mastBase, mast, panel, obstruction.group);
   place(vsat, -9, 2);
 
   // ---- greenhouse dome (north-west) with grow lights
@@ -167,7 +182,10 @@ export function createOutpost(heightAt: (x: number, z: number) => number, sunDir
   top.position.y = 9;
   const foil = new THREE.Mesh(new THREE.CylinderGeometry(2.7, 2.7, 1.4, 8), GOLD);
   foil.position.y = 2.6;
-  lander.add(body, top, foil);
+  // white anti-collision strobe on the top (double flash)
+  const strobe = makeLamp(0xffffff, 0.07, 2.2);
+  strobe.group.position.y = 10.15;
+  lander.add(body, top, foil, strobe.group);
   for (let i = 0; i < 4; i++) {
     const a = (i / 4) * Math.PI * 2 + Math.PI / 4;
     const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 4.2, 6), GREY);
@@ -182,10 +200,34 @@ export function createOutpost(heightAt: (x: number, z: number) => number, sunDir
 
   let t = 0;
   let mastH = 2.5;
+  const hash = (k: number) => {
+    const v = Math.sin(k * 127.1 + 311.7) * 43758.5453;
+    return v - Math.floor(v);
+  };
   return {
     group,
     update(dt, s) {
       t += dt;
+      const T = sharedNow() / 1000; // shared clock: the headset and the projector blink together
+      // ---- signal lights
+      obstruction.group.position.y = 0.6 + mastH + 2.25; // top edge of the array, follows the mast
+      obstruction.set(Math.pow(Math.max(0, Math.sin((2 * Math.PI * T) / 1.5)), 2));
+      const ph = ((T % 2) + 2) % 2;
+      strobe.set(ph < 0.06 || (ph > 0.2 && ph < 0.26) ? 1 : 0);
+      if (s?.sep.active) status.set(Math.sin(2 * Math.PI * 2 * T) > 0 ? 1 : 0.15, 0xff3020);
+      else if (s?.sep.warning) status.set(0.2 + 0.8 * Math.pow(Math.max(0, Math.sin(2 * Math.PI * T)), 2), 0xffb000);
+      else status.set(0.85, 0x2bd96b);
+      // ---- habitat windows: every ~11 s somebody may walk past inside (a soft shadow moving window to window)
+      const slot = Math.floor(T / 11);
+      const u = T - slot * 11;
+      const walking = hash(slot) < 0.6 && u < 6;
+      const dirW = hash(slot + 0.5) < 0.5 ? 1 : -1;
+      const wx = dirW * (-3.6 + 1.2 * u);
+      for (let i = 0; i < 5; i++) {
+        const dim = walking ? 1 - 0.7 * Math.exp(-Math.pow((wx - WINDOW_X[i]) / 0.45, 2)) : 1;
+        const screen = i === 3 ? 0.93 + 0.07 * Math.sin(T * 1.7) * Math.sin(T * 0.43) : 1;
+        windowMats[i].color.copy(windowBase[i]).multiplyScalar(dim * screen * (i === 1 ? 0.88 : 1));
+      }
       // VSAT: 2.5 m stowed → 10 m raised, follows the real raise progress
       const target = !s ? 2.5 : s.switches.vsat === 'up' ? 10 : s.switches.vsat === 'raising' ? 2.5 + 7.5 * s.vsatProgress : 2.5;
       mastH += (target - mastH) * Math.min(1, dt * 3);

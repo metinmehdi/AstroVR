@@ -65,7 +65,14 @@ function rockGeometry(seed: number, detail: number): THREE.BufferGeometry {
   return g;
 }
 
-export function createRocks(heightAt: (x: number, z: number) => number, scenario: Scenario, quality: 'low' | 'high', extent: number): THREE.Group {
+export function createRocks(
+  heightAt: (x: number, z: number) => number,
+  scenario: Scenario,
+  quality: 'low' | 'high',
+  extent: number,
+  /** extra paths to keep clear (the rover's loop), as segments [ax, az, bx, bz] */
+  keepClear: [number, number, number, number][] = [],
+): THREE.Group {
   const group = new THREE.Group();
   const VARIANTS = 5;
   const total = quality === 'high' ? 1100 : 650;
@@ -78,6 +85,7 @@ export function createRocks(heightAt: (x: number, z: number) => number, scenario
       segs.push([a.x, a.z, b.x, b.z]);
     }
   }
+  segs.push(...keepClear);
   const clearance = (x: number, z: number) =>
     Math.min(
       ...segs.map(([ax, az, bx, bz]) => {

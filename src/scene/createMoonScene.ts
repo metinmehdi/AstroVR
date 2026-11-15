@@ -5,6 +5,7 @@
  *     104, tied to LRO LOLA), 1280 m × 1280 m around the site (src/data/terrain-nobile.json)
  *   - Ground colour: the REAL LROC NAC orthomosaic of the same square (public/textures/nobile-albedo.jpg)
  *   + procedural detail below 5 m: small craters, regolith normal map, rocks (src/scene/lunarSurface.ts, rocks.ts)
+ *   + a VIPER-like robotic rover on its survey loop (src/scene/rover.ts; off with ?rover=0)
  *   - Sun and Earth: JPL Horizons positions for the mission date; Earth = NASA EPIC photo
  *   - Sky: NASA SVS Deep Star Maps 2020 (real star catalogues), oriented for the lunar south pole
  * Lighting rule of the lunar south pole: the Sun is only a few degrees above the horizon → very long, hard shadows,
@@ -14,10 +15,14 @@ import * as THREE from 'three';
 import type { Scenario, SimState } from '../shared/types';
 import { MISSION_SKY } from '../shared/realdata';
 import { createHorizon } from './horizon';
-import terrain from '../data/terrain-nobile.json';
+import { TERRAIN_SIZE, lolaHeight } from './lola';
 import { createOutpost } from './outpost';
 import { makeLunar } from './lunarSurface';
 import { createRocks } from './rocks';
+import { buildTerrainGeometry } from './terrainMesh';
+import { glowTexture } from './glow';
+import { createRover, type Rover } from './rover';
+import { loopSegments } from './roverPath';
 
 export type Quality = 'low' | 'high';
 
@@ -34,30 +39,11 @@ export interface MoonScene {
   dispose(): void;
 }
 
-const TERRAIN_SIZE = terrain.sizeM; // metres (real LOLA crop)
 /** Horizon direction from azimuth (from north, clockwise) and elevation. Scene axes: x = east, y = up, z = south. */
 function skyDirection(azimuthDeg: number, elevationDeg: number): THREE.Vector3 {
   const az = THREE.MathUtils.degToRad(azimuthDeg);
   const el = THREE.MathUtils.degToRad(elevationDeg);
   return new THREE.Vector3(Math.sin(az) * Math.cos(el), Math.sin(el), -Math.cos(az) * Math.cos(el));
-}
-
-/** Real LOLA height (metres relative to the site), bilinear between the 4 m samples. */
-function lolaHeight(x: number, z: number): number {
-  const n = terrain.n;
-  const half = terrain.sizeM / 2;
-  const fx = Math.min(n - 1.001, Math.max(0, (x + half) / terrain.stepM));
-  const fz = Math.min(n - 1.001, Math.max(0, (z + half) / terrain.stepM));
-  const j = Math.floor(fx);
-  const i = Math.floor(fz);
-  const tx = fx - j;
-  const tz = fz - i;
-  const H = terrain.heights as number[];
-  const a = H[i * n + j];
-  const b = H[i * n + j + 1];
-  const c = H[(i + 1) * n + j];
-  const d = H[(i + 1) * n + j + 1];
-  return (a * (1 - tx) + b * tx) * (1 - tz) + (c * (1 - tx) + d * tx) * tz;
 }
 
 /** Small deterministic noise: regolith texture between the real 4 m samples (≤ 0.25 m, documented as procedural). */
@@ -104,7 +90,18 @@ interface Crater {
   d: number;
 }
 let CRATER_GRID = new Map<string, Crater[]>();
-function buildCraters(scenario: Scenario) {
+/** distance from (x, z) to the nearest of the segments */
+function segDist(segs: [number, number, number, number][], x: number, z: number): number {
+  let m = Infinity;
+  for (const [ax, az, bx, bz] of segs) {
+    const dx = bx - ax;
+    const dz = bz - az;
+    const t = Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / (dx * dx + dz * dz)));
+    m = Math.min(m, Math.hypot(x - (ax + t * dx), z - (az + t * dz)));
+  }
+  return m;
+}
+function buildCraters(scenario: Scenario, roverPath: [number, number, number, number][]) {
   const segs: [number, number, number, number][] = [];
   for (const route of Object.values(scenario.routes))
     for (let i = 1; i < route.length; i++) {
@@ -133,6 +130,8 @@ function buildCraters(scenario: Scenario) {
     const r = 0.5 + 6.5 * Math.pow(rnd(), 3.2); // radius 0.5–7 m
     const depth = 0.18 + 0.06 * rnd();
     if (clear(x, z) < r * 1.6 + 1.5) continue;
+    // the rover's loop: no crater bowl or rim under its wheels (outer rim 1.8 r, wheels ≤ 0.8 m from the centre line)
+    if (roverPath.length && segDist(roverPath, x, z) < r * 1.8 + 2) continue;
     out.push({ x, z, r, d: r * depth });
   }
   CRATER_GRID = new Map();
@@ -188,21 +187,6 @@ function skyLabel(text: string, dir: THREE.Vector3, dist: number, degAbove: numb
   up.y += Math.tan(THREE.MathUtils.degToRad(degAbove));
   s.position.copy(up.normalize()).multiplyScalar(dist);
   return s;
-}
-
-/** Soft radial glow texture (sun glare, Earth halo). */
-function glowTexture(rgb: string): THREE.CanvasTexture {
-  const c = document.createElement('canvas');
-  c.width = c.height = 128;
-  const g = c.getContext('2d')!;
-  const grad = g.createRadialGradient(64, 64, 0, 64, 64, 64);
-  grad.addColorStop(0, 'rgba(' + rgb + ',1)');
-  grad.addColorStop(0.15, 'rgba(' + rgb + ',0.55)');
-  grad.addColorStop(0.45, 'rgba(' + rgb + ',0.12)');
-  grad.addColorStop(1, 'rgba(' + rgb + ',0)');
-  g.fillStyle = grad;
-  g.fillRect(0, 0, 128, 128);
-  return new THREE.CanvasTexture(c);
 }
 
 /** diffraction starburst (6 soft rays) for the Sun — what a visor/camera shows in an airless sky */
@@ -283,23 +267,12 @@ export function createMoonScene(scenario: Scenario, quality: Quality = 'low'): M
   scene.background = new THREE.Color(0x000000);
 
   // ---- terrain: REAL SfS/LOLA DEM + small craters + gentle noise
-  buildCraters(scenario);
+  const withRover = new URLSearchParams(location.search).get('rover') !== '0';
+  const roverPath = withRover ? loopSegments(1.5) : [];
+  buildCraters(scenario, roverPath);
   const heightAt = (x: number, z: number) => lolaHeight(x, z) + craterHeight(x, z) + microDetail(x, z);
-  const seg = quality === 'high' ? 420 : 300;
-  const geo = new THREE.PlaneGeometry(1, 1, seg, seg);
-  geo.rotateX(-Math.PI / 2);
-  const pos = geo.attributes.position as THREE.BufferAttribute;
-  const uvs = geo.attributes.uv as THREE.BufferAttribute;
-  // vertex spacing ≈ 1.2 m around the outpost, growing to ≈ 11 m at the edges
-  const warp = (t: number) => Math.sign(t) * (0.27 * Math.abs(t) + 0.73 * Math.pow(Math.abs(t), 2.3));
-  const half = TERRAIN_SIZE / 2;
-  for (let i = 0; i < pos.count; i++) {
-    const x = warp(pos.getX(i) * 2) * half;
-    const z = warp(pos.getZ(i) * 2) * half;
-    pos.setXYZ(i, x, heightAt(x, z), z);
-    uvs.setXY(i, (x + half) / TERRAIN_SIZE, 1 - (z + half) / TERRAIN_SIZE);
-  }
-  geo.computeVertexNormals();
+  // vertex spacing ≈ 1.2 m around the outpost, growing to ≈ 11 m at the edges (src/scene/terrainMesh.ts)
+  const { geometry: geo, meshHeightAt } = buildTerrainGeometry(heightAt, TERRAIN_SIZE, quality === 'high' ? 420 : 300);
   const terrainMat = makeLunar(new THREE.MeshStandardMaterial({ color: 0xb4b0a8 }), { uvMetres: TERRAIN_SIZE, tile: 1.7 });
   // the REAL ground: LROC NAC orthomosaic of this exact square (shading flattened; we light it with the real Sun)
   new THREE.TextureLoader().load('/textures/nobile-albedo.jpg', (t) => {
@@ -428,7 +401,14 @@ export function createMoonScene(scenario: Scenario, quality: Quality = 'low'): M
   scene.add(outpost.group);
 
   // ---- scattered rocks (procedural, kept off the walking routes and the outpost)
-  scene.add(createRocks(heightAt, scenario, quality, TERRAIN_SIZE));
+  scene.add(createRocks(heightAt, scenario, quality, TERRAIN_SIZE, roverPath));
+
+  // ---- robotic rover (VIPER-like) on its survey loop, on the drawn ground, on the shared mission clock
+  let rover: Rover | null = null;
+  if (withRover) {
+    rover = createRover({ meshHeightAt, heightAt, sunDir, earthDir });
+    scene.add(rover.group);
+  }
 
   let shadowAcc = 0;
   return {
@@ -437,9 +417,11 @@ export function createMoonScene(scenario: Scenario, quality: Quality = 'low'): M
     terrainHeight: heightAt,
     update(dt, state) {
       outpost.update(dt, state);
-      // moving parts of the outpost (mast, dish) → refresh the shadows now and then
+      rover?.update(dt, state);
+      // moving parts of the outpost (mast, dish) → refresh the shadows now and then; the driving rover more often
+      // (its long shadow would otherwise trail behind it in steps)
       shadowAcc += dt;
-      if (shadowAcc > 1.5) {
+      if (shadowAcc > (rover?.moving ? (quality === 'high' ? 0.1 : 0.33) : 1.5)) {
         shadowAcc = 0;
         shadowDirty = true;
       }
