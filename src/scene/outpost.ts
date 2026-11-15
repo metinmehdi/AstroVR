@@ -142,11 +142,20 @@ export function createOutpost(heightAt: (x: number, z: number) => number, sunDir
     post.rotation.y = th;
     al.add(post);
   }
-  // floor, ceiling with ribs and LED panels, roof outside
+  // floor, ceiling with ribs and LED panels, roof outside. The floor sits on the highest ground under the shelter
+  // (the real terrain slopes: a floor at the centre height would let regolith poke through on the uphill side)
+  const y00 = heightAt(0, 0);
+  let rise = 0;
+  for (let r = 0.4; r <= R; r += 0.4)
+    for (let a = 0; a < Math.PI * 2; a += Math.PI / 12) rise = Math.max(rise, heightAt(Math.sin(a) * r, Math.cos(a) * r) - y00);
+  const FLOOR_Y = rise + 0.03;
+  const skirt = new THREE.Mesh(new THREE.CylinderGeometry(R + 0.05, R + 0.05, FLOOR_Y + 0.6, 48, 1, true), DARK);
+  skirt.position.y = (FLOOR_Y - 0.6) / 2;
+  al.add(skirt);
   const ft = floorTexture();
   const floor = new THREE.Mesh(new THREE.CircleGeometry(R, 48), new THREE.MeshStandardMaterial({ map: ft.map, bumpMap: ft.bump, bumpScale: 1, roughness: 0.6, metalness: 0.6, envMap: env, envMapIntensity: 0.5 }));
   floor.rotation.x = -Math.PI / 2;
-  floor.position.y = 0.02;
+  floor.position.y = FLOOR_Y;
   const ceiling = new THREE.Mesh(new THREE.CircleGeometry(R, 48), ceilingMat);
   ceiling.rotation.x = Math.PI / 2;
   ceiling.position.y = 2.78;
